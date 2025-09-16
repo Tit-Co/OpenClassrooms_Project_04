@@ -209,6 +209,12 @@ class Controller:
                                         f"{players[0].name} "
                                         f"{players[0].first_name}.")
 
+    def tournament_exists(self, tournament_name):
+        for tournament in self.tournaments:
+            if tournament.name == tournament_name:
+                return True
+        return False
+
     def save_tournament(self, tournament_name):
         """
         Method that saves a tournament.
@@ -228,7 +234,11 @@ class Controller:
         Method that updates a tournament. Called when the user select the second option in the main menu.
         """
         self.tournaments = self.get_tournaments()
-        tournament_name = self.view.prompt_for_selecting_tournament(self.tournaments)
+        tournament_name = ""
+        while not self.tournament_exists(tournament_name):
+            print(Fore.RED + f"\nThe tournament {tournament_name} doesn't exist. Please try again.\n")
+            tournament_name = self.view.prompt_for_selecting_tournament(self.tournaments)
+
         for tournament in self.tournaments:
             if tournament.name == tournament_name:
                 self.current_tournament = tournament
@@ -283,10 +293,17 @@ class Controller:
             p2, _, _ = match.match_tuple[1]
 
             score1 = self.view.prompt_for_adding_player_score(p1)
-            score2 = self.view.prompt_for_adding_player_score(p2)
+            score2 = 0
+            match float(score1):
+                case 0:
+                    score2 = 1.0
+                case 0.5:
+                    score2 = 0.5
+                case 1.0:
+                    score2 = 0
 
             match.set_scores(score1, score2)
-        print(f"\nScores saved for {rnd.round_name}.")
+        print(Fore.GREEN + f"\nScores saved for {rnd.round_name}.")
         print(rnd)
 
     def add_player_in_database(self):

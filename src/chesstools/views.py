@@ -46,7 +46,7 @@ class View:
                 print("❌ Must be 1 digit.")
                 continue
             if int(answer) <= 0 or int(answer) > 7:
-                print("❌ Must be a digit between 1 & 6.")
+                print("❌ Must be a digit between 1 & 7.")
                 continue
             return int(answer)
 
@@ -88,10 +88,12 @@ class View:
         Returns:
             The answer converted to str.
         """
-        name = input("Enter the player name: ")
-        if not name:
-            return None
-        return name
+        while True:
+            name = input("Enter the player name: ")
+            if not name:
+                print("❌ Empty string.")
+                continue
+            return name
 
     def prompt_for_player_first_name(self):
         """
@@ -160,6 +162,9 @@ class View:
             if not tournament_name:
                 print("❌ Empty string.")
                 continue
+            if tournament_name.isdigit():
+                print("❌ You must enter a string.")
+                continue
             return tournament_name
 
     def prompt_for_tournament_place(self):
@@ -217,8 +222,12 @@ class View:
         Returns:
             The answer converted to str.
         """
-        tournament_description = input("Enter the tournament description (optional): ")
-        return tournament_description
+        while True:
+            tournament_description = input("Enter the tournament description (optional): ")
+            if not tournament_description:
+                print("❌ Empty string.")
+                continue
+            return tournament_description
 
     def prompt_for_tournament_players_number(self):
         """
@@ -232,12 +241,19 @@ class View:
                 print("❌ Must be a digit.")
                 continue
             if int(players_number) <= 0:
-                print("Must be a positive number.")
+                print("❌ Must be a positive number.")
                 continue
             if not int(players_number) % 2 == 0:
-                print("Must be an even number.")
+                print("❌ Must be an even number.")
                 continue
             return players_number
+
+    @staticmethod
+    def player_exists(identifier, players):
+        for p in players:
+            if identifier == p.identifier:
+                return True
+        return False
 
     def prompt_for_selecting_players(self, all_players, numbers_left, selected_players):
         """
@@ -260,8 +276,13 @@ class View:
             else:
                 all_id_str += f"{player.identifier}"
         print(f"Players to select : {str(numbers_left)} [{all_id_str}]\n")
-        identifier = self.prompt_for_player_identifier()
-        return identifier
+
+        while True:
+            identifier = self.prompt_for_player_identifier()
+            if not self.player_exists(identifier, all_players):
+                print(f"❌ Player with identifier {identifier} does not exist.")
+                continue
+            return identifier
 
     def prompt_for_selecting_tournament(self, all_tournaments):
         """
@@ -286,5 +307,13 @@ class View:
         Returns:
             The score in float format.
         """
-        score = input(f"Enter score for player {player.identifier} : ")
-        return float(score)
+        while True:
+            score = input(f"\nEnter score for player {player.identifier}. "
+                          f"The score for the other player will be set automatically : ")
+            if not score.isdigit():
+                print("❌ Must be a float number (0, 0.5, 1).")
+                continue
+            if float(score) not in [0, 0.5, 1.0]:
+                print("❌ Must be 0 or 0.5 or 1.")
+                continue
+            return float(score)
