@@ -16,7 +16,7 @@ class View:
         print(Fore.BLUE + "▷▷ 3. Add a player into database")
         print(Fore.BLUE + "▷▷ 4. Display the club players")
         print(Fore.BLUE + "▷▷ 5. Display the tournaments")
-        print(Fore.BLUE + "▷▷ 6. Display reports")
+        print(Fore.BLUE + "▷▷ 6. Generate reports")
         print(Fore.BLUE + "▷▷ 7. Quit the app\n")
 
     def display_update_tournament_menu(self):

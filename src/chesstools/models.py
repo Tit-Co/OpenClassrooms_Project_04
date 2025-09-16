@@ -4,12 +4,16 @@ import random
 import string
 from collections import defaultdict, UserList
 from datetime import datetime
+from pathlib import Path
 from colorama import Fore, init
 init(autoreset=True)
 
 
 fake = faker.Faker()
 NUMBER_OF_ROUNDS = 4
+TOURNAMENT_FOLDER = Path("./data/tournaments/")
+TOURNAMENTS_DATA_JSON = TOURNAMENT_FOLDER / Path("./tournaments.json")
+PLAYERS_DATA_JSON = TOURNAMENT_FOLDER / Path("./players.json")
 
 
 class Match:
@@ -221,7 +225,18 @@ class Players(UserList):
                 return True
 
         except FileNotFoundError:
-            print(f"{file_path} : ❌ file not found !")
+            print(f"{file_path} : ❌ file not found !\n")
+            while True:
+                answer = input(Fore.YELLOW + f"Do you want to create the file ? (Y/N)\n")
+                if answer == "Y" or answer == "y":
+                    if self.save_players_to_json(PLAYERS_DATA_JSON):
+                        print(Fore.GREEN + "File Created !\n")
+                    return True
+                elif answer == "N" or answer == "n":
+                    return False
+                else:
+                    print(Fore.RED + "You did not enter Y or N.\n")
+                    continue
             return False
 
     def save_players_to_json(self, file_path):
@@ -559,7 +574,18 @@ class Tournaments(UserList):
                 return True
 
         except FileNotFoundError:
-            print(f"{file_path} : ❌ file not found !")
+            print(f"{file_path} : ❌ file not found !\n")
+            while True:
+                answer = input("Do you want to create the file ? (Y/N)\n")
+                if answer == "Y" or answer == "y":
+                    if self.save_tournament_to_json(TOURNAMENTS_DATA_JSON):
+                        print(Fore.GREEN + "File Created !\n")
+                    return True
+                elif answer == "N" or answer == "n":
+                    return False
+                else:
+                    print(Fore.RED + "You did not enter Y or N.\n")
+                    continue
             return False
 
     def save_tournament_to_json(self, file_path):

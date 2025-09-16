@@ -28,7 +28,14 @@ class Controller:
 
             match menu:
                 case 1:
-                    self.create_tournament()
+                    if len(self.get_players()) >= 4:
+                        self.create_tournament()
+                    elif len(self.get_players()) in [1, 2, 3]:
+                        print(Fore.RED + "\nThere is not enough players to create a tournament.\n")
+                        continue
+                    else:
+                        print(Fore.RED + "\nNo players found. You can not create a new tournament before adding new players.\n")
+                        continue
                 case 2:
                     self.display_tournaments_sub_menu()
                 case 3:
@@ -51,9 +58,6 @@ class Controller:
         """
         print(Fore.YELLOW + "⮞ Getting players...\n")
         players = Players()
-
-        # generates random players
-        # players.generate_random_players(10)
 
         # loads players datas from json
         if players.load_players_from_json(PLAYERS_DATA_JSON):
@@ -373,6 +377,9 @@ class Controller:
                     self.update_tournament()
                 case 3:
                     break
+
+    def display_reports(self):
+        print(Fore.YELLOW + "\nWork in progress...\n")
 
 
 if __name__ == "__main__":
