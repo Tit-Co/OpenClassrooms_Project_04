@@ -1,0 +1,590 @@
+import faker
+import json
+import random
+import string
+from collections import defaultdict, UserList
+from datetime import datetime
+from colorama import Fore, init
+init(autoreset=True)
+
+
+fake = faker.Faker()
+NUMBER_OF_ROUNDS = 4
+
+
+class Match:
+    def __init__(self, player1, player2, score1=0, score2=0):
+        if random.choice([True, False]):
+            self.match_tuple = ([player1, 0, "white"], [player2, 0, "black"])
+        else:
+            self.match_tuple = ([player2, 0, "white"], [player1, 0, "black"])
+
+    def __iter__(self):
+        return iter(self.match_tuple)
+
+    def __str__(self):
+        p1, s1, c1 = self.match_tuple[0]
+        p2, s2, c2 = self.match_tuple[1]
+
+        s1_display = s1 if s1 is not None else 0
+        s2_display = s2 if s2 is not None else 0
+
+        return (f"┝╍ {p1} - {c1.upper()} - score: {s1_display}\n"
+                f"│ VS\n"
+                f"┝╍ {p2} - {c2.upper()} - score: {s2_display}\n")
+
+    def __repr__(self):
+        return str(self.match_tuple)
+
+    def set_scores(self, score1, score2):
+        """
+        Method that sets the scores of the match.
+        Args:
+            score1 (float): The score 1.
+            score2 (float): The score 2.
+        """
+        self.match_tuple[0][1] = score1
+        self.match_tuple[1][1] = score2
+
+    def set_colors(self, color1, color2):
+        """
+        Method that sets the players color in the match.
+        Args:
+            color1 (float): The color 1.
+            color2 (float): The color 2.
+        """
+        self.match_tuple[0][2] = color1
+        self.match_tuple[1][2] = color2
+
+    def convert_to_dict(self):
+        p1, s1, c1 = self.match_tuple[0]
+        p2, s2, c2 = self.match_tuple[1]
+        return {
+            "player1": {
+                "identifier": p1.identifier,
+                "score": s1,
+                "color": c1,
+            },
+            "player2": {
+                "identifier": p2.identifier,
+                "score": s2,
+                "color": c2,
+            }
+        }
+
+
+class Player:
+    def __init__(self, name, first_name, birth_date, identifier):
+        self.name = name
+        self.first_name = first_name
+        self.birth_date = birth_date
+        self.identifier = identifier
+
+    def __str__(self):
+        return f"{self.identifier} - {self.name.upper()} {self.first_name} born on {self.birth_date}"
+
+    def __repr__(self):
+        return str(self)
+
+    def convert_to_dict(self):
+        """
+        Method that converts the player's data to a dictionary.
+        Returns: The dictionary of the player's data.
+        """
+        return {"name": self.name,
+                "first_name": self.first_name,
+                "birth_date": self.birth_date}
+
+
+class Players(UserList):
+    def __init__(self, players=None):
+        super().__init__(players or [])
+
+    def __str__(self, indent=0):
+        prefix = " " * indent
+        players_str = ""
+        for player in self:
+            players_str += f"{prefix}│ ┝╍ {player}\n"
+        return (f"{prefix}┌ All players :\n"
+                f"{players_str}"
+                f"{prefix}└──────────────")
+
+    def __repr__(self):
+        return str(self)
+
+    def add_player(self, player):
+        """
+        Method that adds a player to the list of players.
+        Args:
+            player (Player): Player to be added.
+        """
+        self.data.append(player)
+
+    def player_exists(self, player):
+        """
+        Method that checks if a player identifier is already in the list of players.
+        Args:
+            player (Player): Player to be checked.
+
+        Returns:
+            bool: True if the player identifier exists in the list of players.
+        """
+        return any(p.identifier == player.identifier for p in self.data)
+
+    def shuffle(self):
+        """
+        Method that shuffles the list of players.
+        """
+        random.shuffle(self.data)
+
+    def convert_to_dict(self):
+        """
+        Method that converts the players' data to a dictionary.
+        Returns:
+            The dictionary of the players' data.
+        """
+        return {str(player.identifier): player.convert_to_dict() for player in self}
+
+    def convert_dict_to_players(self, dictionary):
+        """
+        Method that converts a players' datas in a dictionary to the Players object.
+        Args:
+            dictionary (dict): Dictionary to be converted.
+        """
+        for identifier, attrs in dictionary.items():
+            self.add_player(Player(
+                attrs["name"],
+                attrs["first_name"],
+                attrs["birth_date"],
+                identifier
+            ))
+
+    """ def create_static_players(self):
+        player1 = Player("Marie", "Nicolas", "28/07/1979", "AH13765")
+        player2 = Player("Esneult", "Samuel", "01/05/1979", "CT54896")
+        player3 = Player("Dupont", "Jean", "24/05/1987", "BL17953")
+        player4 = Player("Testut", "Sylvie", "05/03/1976", "LM47852")
+        self.add_player(player1)
+        self.add_player(player2)
+        self.add_player(player3)
+        self.add_player(player4)"""
+
+    @staticmethod
+    def generate_random_identifier():
+        """
+        Method that generates a random identifier. Used only for testing purposes.
+        Returns:
+            The random identifier.
+        """
+        alphabet = string.ascii_letters.lower()
+        letter1 = fake.word(ext_word_list=alphabet).capitalize()
+        letter2 = fake.word(ext_word_list=alphabet).capitalize()
+        digits = string.digits
+        number = ""
+        for _ in range(5):
+            number += fake.word(ext_word_list=digits)
+        return letter1 + letter2 + number
+
+    def generate_random_player(self):
+        """
+        Methode that generates a random player identifier. Used only for testing purposes.
+        Returns:
+            A player object.
+        """
+        player = Player(fake.last_name(),
+                        fake.first_name(),
+                        fake.date_of_birth().strftime("%d/%m/%Y"),
+                        self.generate_random_identifier())
+        return player
+
+    def generate_random_players(self, number_of_players):
+        """
+        Method that generates randomly the players list accordingly to the given number of players.
+        Used only for testing purposes.
+        Args:
+            number_of_players (int): Number of players to be generated.
+        """
+        self.data = [self.generate_random_player() for _ in range(number_of_players)]
+
+    def load_players_from_json(self, file_path):
+        """
+        Method that loads the players from a json file.
+        Args:
+            file_path (Path): Path to the json file.
+        Returns (bool) : True if the file was successfully loaded. False otherwise.
+        """
+        try:
+            with open(file_path, encoding="utf-8") as json_file:
+                data = json.load(json_file)
+                # convert dictionary datas in Player object
+                self.convert_dict_to_players(data)
+                return True
+
+        except FileNotFoundError:
+            print(f"{file_path} : ❌ file not found !")
+            return False
+
+    def save_players_to_json(self, file_path):
+        """
+        Method that saves the players to a json file.
+        Args:
+            file_path (Path): Path to the json file.
+        Returns (bool): True if the saved players were saved. False otherwise.
+        """
+        try:
+            with open(file_path, "w", encoding="utf-8") as json_file:
+                players_dict = self.convert_to_dict()
+                json.dump(players_dict, json_file, ensure_ascii=False, indent=4)
+                return True
+
+        except FileNotFoundError:
+            print(f"{file_path} : ❌ file not found !")
+            return False
+
+    def get_player_by_identifier(self, identifier: str):
+        """
+        Method that gets a player by identifier.
+        Args:
+            identifier (str): Identifier of the player to be retrieved.
+
+        Returns:
+            The player object with the given identifier. Or None if not found.
+        """
+        return next((p for p in self if p.identifier == identifier), None)
+
+
+class Round:
+    def __init__(self, round_name):
+        self.round_name = round_name
+        self.matches = []
+        self.start_date = None
+        self.start_time = None
+        self.end_date = None
+        self.end_time = None
+
+    def __str__(self):
+        start = f"{self.start_date} {self.start_time}" if self.start_date and self.start_time else "Not started"
+        end = f"{self.end_date} {self.end_time}" if self.end_date and self.end_time else "Not finished"
+
+        round_str = f"{self.round_name} (from {start} → {end})"
+
+        if not self.matches:
+            return f"The {self.round_name} has no matches yet."
+
+        matches_str = ""
+        for match in self.matches:
+            matches_str += f"{match}\n"
+
+        return (f"The {round_str} has {len(self.matches)} matches:\n"
+                f"{matches_str}")
+
+    def __repr__(self):
+        return str(self)
+
+    def set_start_date(self):
+        """
+        Method that sets the start date of the round.
+        """
+        now = datetime.now()
+        self.start_date = now.strftime("%d/%m/%Y")
+        self.start_time = now.strftime("%H:%M:%S")
+
+    def set_end_date(self):
+        """
+        Method that sets the end date of the round.
+        """
+        now = datetime.now()
+        self.end_date = now.strftime("%d/%m/%Y")
+        self.end_time = now.strftime("%H:%M:%S")
+
+    @staticmethod
+    def get_random_scores():
+        """
+        Method that gets a random score between 0, 1 and 0.5. Used only for testing purposes.
+        Returns:
+            A random score in a tuple.
+        """
+        scenario = random.randint(0, 2)
+        if scenario == 0:
+            return 1, 0
+        if scenario == 1:
+            return 0, 1
+        return 0.5, 0.5
+
+    def specify_random_scores(self):
+        """
+        Method that specifies random scores for all matches in the round.
+        """
+        for match in self.matches:
+            scores = self.get_random_scores()
+            match.set_scores(scores[0], scores[1])
+
+    def convert_to_dict(self):
+        """
+        Method that converts the round's data to a dictionary.
+        Returns: The dictionary of the round's data.
+        """
+        return {
+            "round_name": self.round_name,
+            "start_date": self.start_date,
+            "start_time": self.start_time,
+            "end_date": self.end_date,
+            "end_time": self.end_time,
+            "matches": {f"match_{i+1}": match.convert_to_dict() for i, match in enumerate(self.matches)}
+        }
+
+
+class Tournament:
+    def __init__(self, name, place, start_date, end_date, players=None, description="", current_round=1,
+                 rounds_number=NUMBER_OF_ROUNDS):
+        self.name = name
+        self.place = place
+        self.start_date = start_date
+        self.end_date = end_date
+        self.rounds_number = rounds_number
+        self.current_round = current_round
+        self.rounds = []
+        self.players = players if players else Players()
+        self.description = description
+
+    def __str__(self):
+        rounds_str = ""
+        if self.rounds:
+            rounds_str += " ┌ All rounds :\n"
+            for rnd in self.rounds:
+                for line in str(rnd).splitlines():
+                    rounds_str += f"    │ {line}\n"
+            rounds_str += "    └──────────────\n"
+
+        return (f"{self.name} ({self.place}, {self.start_date} → {self.end_date}, "
+                f"currently in round {self.current_round} of {self.rounds_number} rounds, "
+                f"description : {self.description})\n"
+                f"{rounds_str}")
+
+    def __repr__(self):
+        return str(self)
+
+    def is_completed(self):
+        """
+        Methods that checks if the round is completed.
+        Returns:
+            True if the round is completed. False otherwise.
+        """
+        if self.current_round == 4:
+            if self.rounds[3].end_date:
+                return True
+            return False
+        return False
+
+    def add_players(self, players):
+        """
+        Method that copies the players object and adds them to the tournament Players object.
+        Args:
+            players (Players): Players object.
+        """
+        if not isinstance(players, Players):
+            players = Players(players)
+        for p in players:
+            self.players.add_player(p)
+
+    def add_round(self, tournament_round):
+        """
+        Method that adds a round to the tournament Rounds object.
+        Args:
+            tournament_round (Round): Round object.
+        """
+        self.rounds.append(tournament_round)
+
+    def sort_players_by_score(self, verbose=False):
+        """
+        Method that sorts the players in Players object by their scores.
+        Args:
+            verbose (bool): Boolean flag to determine if scoreboard should be printed.
+        """
+        scores = defaultdict(float)
+
+        print(Fore.YELLOW + "⮞ Sorting players by score ...")
+
+        player_by_id = {p.identifier: p for p in self.players}
+
+        for rnd in (self.rounds or []):
+            for match in rnd.matches:
+
+                pairs = match.match_tuple
+
+                for pair in pairs:
+                    player_entry = pair[0]
+                    raw_score = pair[1]
+                    pid = player_entry.identifier
+                    sc = float(raw_score)
+                    scores[pid] += sc
+
+            for p in self.players:
+                scores.setdefault(p.identifier, 0.0)
+
+            # debug : display the scoreboard if asked
+            if verbose:
+                print(Fore.YELLOW + "⮞ Scoreboard :")
+                for pid, sc in sorted(scores.items(), key=lambda kv: kv[1], reverse=True):
+                    pl = player_by_id.get(pid)
+                    label = f"{pl.identifier} - {pl.name} {pl.first_name}" if pl else pid
+                    print(Fore.YELLOW + f"⮡ {label}: {sc}")
+                print("\n")
+
+        sorted_players = sorted(self.players, key=lambda p: scores.get(p.identifier, 0.0), reverse=True)
+        self.players[:] = sorted_players
+
+    def convert_to_dict(self):
+        """
+        Method that converts the player's data to a dictionary.
+        Returns: The dictionary of the player's data.
+        """
+        return {
+            "place": self.place,
+            "start_date": self.start_date,
+            "end_date": self.end_date,
+            "description": self.description,
+            "current_round": self.current_round,
+            "rounds_number": self.rounds_number,
+            "players": self.players.convert_to_dict(),
+            "rounds": {rnd.round_name: rnd.convert_to_dict() for rnd in self.rounds}
+        }
+
+
+class Tournaments(UserList):
+    def __init__(self, tournaments=None):
+        super().__init__(tournaments or [])
+
+    def __str__(self):
+        tournaments_str = ""
+        for tournament in self:
+            tournaments_str += f"│ ┝╍ {tournament}"
+        return f"┌ All tournaments :\n{tournaments_str}└──────────────────"
+
+    def __repr__(self):
+        return str(self)
+
+    def add_tournament(self, tournament):
+        """
+        Method that adds a tournament to the list of tournaments.
+        Args:
+            tournament (Tournament): Player to be added.
+        """
+        self.data.append(tournament)
+
+    def tournament_exists(self, tournament):
+        """
+        Method that checks if a tournament name is already in the list of tournaments.
+        Args:
+            tournament (Tournament): Tournament to be checked.
+
+        Returns:
+            bool: True if the tournament name exists in the list of tournaments.
+        """
+        return any(t.name == tournament.name for t in self.data)
+
+    def convert_dict_to_tournaments(self, dictionary):
+        """
+        Method that converts tournaments' datas in a dictionary to the Tournaments object.
+        Args:
+            dictionary (dict): Dictionary to be converted.
+        """
+        for name, attrs in dictionary.items():
+            players = Players()
+            players_dict = attrs.get("players", {})
+
+            for identifier, player_attrs in players_dict.items():
+                player = Player(
+                    player_attrs["name"],
+                    player_attrs["first_name"],
+                    player_attrs["birth_date"],
+                    identifier
+                )
+                players.add_player(player)
+
+            tournament = Tournament(
+                name,
+                attrs["place"],
+                attrs["start_date"],
+                attrs["end_date"],
+                players,
+                attrs.get("description", ""),
+                attrs.get("current_round", 1),
+                attrs.get("rounds_number", NUMBER_OF_ROUNDS)
+            )
+
+            # Rounds
+            rounds_dict = attrs.get("rounds", {})
+            for rnd_name, rnd_attrs in rounds_dict.items():
+                rnd = Round(rnd_name)
+                rnd.start_date = rnd_attrs.get("start_date")
+                rnd.start_time = rnd_attrs.get("start_time")
+                rnd.end_date = rnd_attrs.get("end_date")
+                rnd.end_time = rnd_attrs.get("end_time")
+                rnd.matches = []
+
+                # rebuild the matches
+                matches_dict = rnd_attrs.get("matches", {})
+                for _, match_attrs in matches_dict.items():
+                    p1 = players.get_player_by_identifier(match_attrs["player1"]["identifier"])
+                    p2 = players.get_player_by_identifier(match_attrs["player2"]["identifier"])
+                    s1 = match_attrs["player1"]["score"]
+                    s2 = match_attrs["player2"]["score"]
+                    c1 = match_attrs["player1"]["color"]
+                    c2 = match_attrs["player2"]["color"]
+
+                    match = Match(p1, p2)
+                    match.set_scores(s1, s2)
+                    match.set_colors(c1, c2)
+                    rnd.matches.append(match)
+
+                tournament.rounds.append(rnd)
+
+            self.add_tournament(tournament)
+
+    def load_tournaments_from_json(self, file_path):
+        """
+        Method that loads tournaments from a json file
+        Args:
+            file_path (Path): Path to the json file to be loaded.
+
+        Returns:
+            Returns a boolean indicating if the tournaments were loaded successfully or not.
+        """
+        try:
+            with open(file_path, encoding="utf-8") as json_file:
+                data = json.load(json_file)
+                # convert dictionary datas in Tournaments object
+                self.convert_dict_to_tournaments(data)
+                return True
+
+        except FileNotFoundError:
+            print(f"{file_path} : ❌ file not found !")
+            return False
+
+    def save_tournament_to_json(self, file_path):
+        """
+        Method that saves tournaments to a json file.
+        Args:
+            file_path (Path): Path to the json file to be saved.
+
+        Returns:
+            Returns a boolean indicating if the tournaments were saved successfully or not.
+        """
+        try:
+            with open(file_path, "w", encoding="utf-8") as json_file:
+                tournaments_dict = self.convert_to_dict()
+                json.dump(tournaments_dict, json_file, ensure_ascii=False, indent=4)
+                return True
+
+        except FileNotFoundError:
+            print(f"{file_path} : ❌ file not found !")
+            return False
+
+    def convert_to_dict(self):
+        """
+        Method that converts the tournaments' data to a dictionary.
+        Returns:
+            The dictionary of the tournaments' data.
+        """
+        return {tournament.name: tournament.convert_to_dict() for tournament in self}

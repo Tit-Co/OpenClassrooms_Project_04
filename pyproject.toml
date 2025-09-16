@@ -1,0 +1,12 @@
+[project]
+name = "openclassrooms-project-04"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "colorama>=0.4.6",
+    "faker>=37.6.0",
+    "flake8>=7.3.0",
+    "flake8-html>=0.4.3",
+]
