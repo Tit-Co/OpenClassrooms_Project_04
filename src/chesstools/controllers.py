@@ -1,22 +1,39 @@
 from .models import Match, Player, Players, Round, Tournament, Tournaments
 from .views import View
 from pathlib import Path
+from jinja2 import Environment, FileSystemLoader
 from colorama import Fore, Style, init
 init(autoreset=True)
 
+# Base paths
 TOURNAMENT_FOLDER = Path("./data/tournaments/")
+REPORTS_FOLDER = Path("./data/reports/")
+
+# Json
 TOURNAMENTS_DATA_JSON = TOURNAMENT_FOLDER / Path("./tournaments.json")
 PLAYERS_DATA_JSON = TOURNAMENT_FOLDER / Path("./players.json")
 
+# Reports paths
+ALPHABETICALLY_PLAYERS_REPORT = REPORTS_FOLDER / Path("./1_report_alphabetically_players.html")
+ALL_TOURNAMENTS_REPORT = REPORTS_FOLDER / Path("./2_report_all_tournaments.html")
+CURRENT_TOURNAMENT_PLAYERS_REPORT = REPORTS_FOLDER / Path("./3_report_current_tournament_players.html")
+CURRENT_TOURNAMENT_ROUNDS_AND_MATCHES_REPORT = REPORTS_FOLDER / Path("./4_report_current_tournament_rounds_matches.html")
+
+# Templates paths
+ALPHABETICALLY_PLAYERS_TEMPLATE_HTML = "./src/templates/report_alphabetically_players_template.html"
+TOURNAMENTS_TEMPLATE_HTML = "./src/templates/report_tournaments_template.html"
+CURRENT_TOURNAMENT_PLAYERS_TEMPLATE_HTML = "./src/templates/report_current_tournament_players_template.html"
+CURRENT_TOURNAMENT_ROUNDS_MATCHES_TEMPLATE_HTML = ("./src/templates/report_current_tournament_"
+                                                   "rounds_matches_template.html")
 
 class Controller:
-    def __init__(self, view):
+    def __init__(self, the_view):
         # models
         self.current_tournament = None
         self.tournaments = Tournaments()
 
         # views
-        self.view = view
+        self.view = the_view
 
     def run(self):
         """
@@ -34,7 +51,8 @@ class Controller:
                         print(Fore.RED + "\nThere is not enough players to create a tournament.\n")
                         continue
                     else:
-                        print(Fore.RED + "\nNo players found. You can not create a new tournament before adding new players.\n")
+                        print(Fore.RED + "\nNo players found. "
+                                         "You can not create a new tournament before adding new players.\n")
                         continue
                 case 2:
                     self.display_tournaments_sub_menu()
@@ -43,14 +61,17 @@ class Controller:
                 case 4:
                     self.display_players()
                 case 5:
-                    self.display_tournaments()
+                    self.display_a_tournament()
                 case 6:
-                    self.display_reports()
+                    self.display_tournaments()
                 case 7:
+                    self.display_reports_sub_menu()
+                case 8:
                     print(Style.BRIGHT + Fore.RED + "👋 Goodbye ! 👋")
                     break
 
-    def get_players(self):
+    @staticmethod
+    def get_players():
         """
         Method that gets players object from the json file
         Returns:
@@ -63,9 +84,25 @@ class Controller:
         if players.load_players_from_json(PLAYERS_DATA_JSON):
             return players
         else:
-            return None
+            print(Style.BRIGHT + Fore.RED + "👋 Goodbye ! 👋")
+            exit(1)
 
-    def get_tournaments(self):
+    def get_tournament(self, tournament_name):
+        """
+        Method that gets a tournament by name.
+        Args:
+            tournament_name (str): Tournament name.
+
+        Returns:
+            The tournament object. Or None otherwise.
+        """
+        for t in self.tournaments:
+            if t.name == tournament_name:
+                return t
+        return None
+
+    @staticmethod
+    def get_all_tournaments():
         """
         Method that gets tournaments object from the json file
         Returns:
@@ -78,7 +115,8 @@ class Controller:
         if tournaments.load_tournaments_from_json(TOURNAMENTS_DATA_JSON):
             return tournaments
         else:
-            return None
+            print(Style.BRIGHT + Fore.RED + "👋 Goodbye ! 👋")
+            exit(1)
 
     def display_players(self):
         """
@@ -91,28 +129,46 @@ class Controller:
         """
         Method that displays tournaments object.
         """
-        tournaments = self.get_tournaments()
+        tournaments = self.get_all_tournaments()
         print(tournaments)
+
+    def display_a_tournament(self):
+        self.tournaments = self.get_all_tournaments()
+        name = self.view.prompt_for_selecting_tournament(self.tournaments)
+        self.current_tournament = self.get_tournament(name)
+
+        print(self.current_tournament)
+
+        if self.current_tournament.is_completed():
+            # Tournament completed
+            self.display_completed_tournament()
 
     def create_tournament(self):
         """
-        Method that creates a tournament object. Work in progress.
+        Method that creates a tournament object.
         """
-        name = self.view.prompt_for_tournament_name()
+        while True:
+            name = self.view.prompt_for_tournament_name()
+            self.tournaments = self.get_all_tournaments()
+            if any(t.name == name for t in self.tournaments):
+                print("❌ The tournament's name already exists. Please choose another one.\n")
+                continue
+            else:
+                break
+
         place = self.view.prompt_for_tournament_place()
         start_date = self.view.prompt_for_tournament_start_date()
         end_date = self.view.prompt_for_tournament_end_date()
         description = self.view.prompt_for_tournament_description()
         players_number = self.view.prompt_for_tournament_players_number()
-        self.current_tournament = Tournament(name, place, start_date, end_date, players=None, description=description)
+
+        self.current_tournament = Tournament(name, place, start_date, end_date, players=Players(), description=description)
         players_to_play = self.select_tournament_players(players_number)
 
-        self.tournaments = self.get_tournaments()
         self.current_tournament.add_players(players_to_play)
 
-        # Tournament starts
-        # Create round 1
-        self.create_round(self.current_tournament.current_round)
+        # Create round
+        self.current_tournament.create_round(self.current_tournament.current_round)
 
         print(self.current_tournament)
 
@@ -124,94 +180,43 @@ class Controller:
             if self.tournaments.save_tournament_to_json(TOURNAMENTS_DATA_JSON):
                 print(Fore.YELLOW + f"✅ New tournament added to database !\n{self.current_tournament}")
 
-    def match_already_played(self, player1, player2):
-        """
-        Method that checks if the player 1 has already played with player 2.
-        Args:
-            player1 (Player): Player 1 object.
-            player2 (Player): Player 2 object.
-
-        Returns:
-            A boolean indicating if the player 1 has already played with player 2.
-        """
-        for rnd in self.current_tournament.rounds:
-            for match in rnd.matches:
-                p1 = match.match_tuple[0][0]
-                p2 = match.match_tuple[1][0]
-                if (p1 == player1 and p2 == player2) or (p1 == player2 and p2 == player1):
-                    return True
-        return False
-
-    def create_matches(self, players, round_obj):
-        """
-        Creates matches for a given round, ensuring players haven't played each other before.
-
-        Args:
-            players (Players): The players participating in the tournament.
-            round_obj (Round): The round object to populate with matches.
-        """
-        players_list = players.copy()
-        round_obj.matches = []
-
-        while players_list:
-            first = players_list.pop(0)
-
-            # seek a second player who has not played with the first one
-            found_opponent = False
-            for i, candidate in enumerate(players_list):
-                if not self.match_already_played(first, candidate):
-                    second = players_list.pop(i)
-                    round_obj.matches.append(Match(first, second))
-                    found_opponent = True
-                    break
-
-            # If no suitable candidate found, pair with the first available
-            if not found_opponent and players_list:
-                second = players_list.pop(0)
-                round_obj.matches.append(Match(first, second))
-
-    def create_round(self, round_number):
-        """
-        Method that creates a round object.
-        Args:
-            round_number (int): The round number.
-        """
-        if round_number == 1:
-            # shuffles players
-            self.current_tournament.players.shuffle()
-        else:
-            self.current_tournament.sort_players_by_score()
-
-        # create round
-        round_obj = Round(f"Round {round_number}")
-
-        # create matches
-        self.create_matches(self.current_tournament.players, round_obj)
-
-        # Set start date/time
-        round_obj.set_start_date()
-
-        # Append round to tournament
-        self.current_tournament.rounds.append(round_obj)
-
-        print(round_obj)
-
     def display_completed_tournament(self):
         """
         Method that displays a completed tournament object and th winner of the tournament.
         """
         # Tournament completed
-        print("\nTournament completed !\n")
 
-        # sort players by score
-        self.current_tournament.sort_players_by_score()
-        players = self.current_tournament.players
+        scores, id_to_player = Tournament.compute_player_scores(self.current_tournament)
+        if not scores:
+            print("No players/scores found.")
+            return
 
-        # Display the winner
-        print(Style.BRIGHT + Fore.RED + f"⮞ The winner of {self.current_tournament.name} is "
-                                        f"{players[0].identifier} : "
-                                        f"{players[0].name} "
-                                        f"{players[0].first_name}.")
+        # find max score
+        max_score = max(scores.values())
+
+        # filter the players with this score
+        winner_ids = [pid for pid, sc in scores.items() if sc == max_score]
+        winners = [id_to_player[pid] for pid in winner_ids]
+
+        # Display the winner(s)
+        if len(winners) == 1:
+            # one winner
+            winner = winners[0]
+            print(
+                Style.BRIGHT + Fore.RED +
+                f"\n⮞ 🏆 The winner of {self.current_tournament.name} is "
+                f"{winner.identifier} : {winner.name} {winner.first_name} (score {max_score}).\n")
+        else:
+            # several winners
+            print(
+                Style.BRIGHT + Fore.RED +
+                f"\n⮞ 🏆 The winners of {self.current_tournament.name} are :\n"
+            )
+            for w in winners:
+                print(
+                    Style.BRIGHT + Fore.RED +
+                    f"   - {w.identifier} : {w.name} {w.first_name} (tie at {max_score}).\n"
+                )
 
     def tournament_exists(self, tournament_name):
         for tournament in self.tournaments:
@@ -237,18 +242,36 @@ class Controller:
         """
         Method that updates a tournament. Called when the user select the second option in the main menu.
         """
-        self.tournaments = self.get_tournaments()
-        tournament_name = ""
-        while not self.tournament_exists(tournament_name):
-            print(Fore.RED + f"\nThe tournament {tournament_name} doesn't exist. Please try again.\n")
-            tournament_name = self.view.prompt_for_selecting_tournament(self.tournaments)
 
+        self.tournaments = self.get_all_tournaments()
+        running_tournaments = Tournaments()
         for tournament in self.tournaments:
-            if tournament.name == tournament_name:
-                self.current_tournament = tournament
-        print(Fore.YELLOW + f"Selected tournament: {tournament_name}.")
+            if not tournament.is_completed():
+                running_tournaments.add_tournament(tournament)
 
-        if not self.current_tournament.is_completed():
+        if len(running_tournaments) == 0:
+            print(Fore.RED + f"⛔ All tournaments are completed. You can not add any score.\n")
+        else:
+
+            while True:
+                tournament_name = self.view.prompt_for_selecting_tournament(running_tournaments)
+                if not self.tournament_exists(tournament_name):
+                    print(Fore.RED + f"The tournament {tournament_name} does not exist. Please try again.\n")
+                    continue
+                elif self.get_tournament(tournament_name).is_completed():
+                    self.current_tournament = self.get_tournament(tournament_name)
+                    self.display_completed_tournament()
+                    print(Fore.RED + f"Tournament already completed ! Please choose another one.\n")
+                    continue
+                else:
+                    break
+
+            for tournament in self.tournaments:
+                if tournament.name == tournament_name:
+                    self.current_tournament = tournament
+            print(Fore.YELLOW + f"\nSelected tournament: {tournament_name}.")
+
+
             if self.current_tournament.current_round < 4:
                 # set scores for current round
                 self.set_tournament_scores()
@@ -260,7 +283,7 @@ class Controller:
                 self.current_tournament.current_round += 1
 
                 # create next round and matches
-                self.create_round(self.current_tournament.current_round)
+                self.current_tournament.create_round(self.current_tournament.current_round)
 
                 # Save
                 self.save_tournament(tournament_name)
@@ -272,24 +295,18 @@ class Controller:
                 # Set end date/time for current round
                 self.current_tournament.rounds[self.current_tournament.current_round - 1].set_end_date()
 
-                # Set tournament completed boolean to True
-                self.current_tournament.completed = True
+                # Save
+                self.save_tournament(tournament_name)
 
                 # Tournament completed
                 self.display_completed_tournament()
 
-                # Save
-                self.save_tournament(tournament_name)
-        else:
-            # Only displaying the winner
-            self.display_completed_tournament()
 
     def set_tournament_scores(self):
         """
         Method that sets the tournament scores.
         """
         tournament = self.current_tournament
-        print("Rounds in tournament:", tournament.rounds)
         rnd = tournament.rounds[tournament.current_round - 1]
         print(rnd)
         for match in rnd.matches:
@@ -300,13 +317,13 @@ class Controller:
             score2 = 0
             match float(score1):
                 case 0:
-                    score2 = 1.0
+                    score2 += 1.0
                 case 0.5:
-                    score2 = 0.5
+                    score2 += 0.5
                 case 1.0:
-                    score2 = 0
+                    score2 += 0.0
 
-            match.set_scores(score1, score2)
+            match.set_scores(p1, score1, p2, score2)
         print(Fore.GREEN + f"\nScores saved for {rnd.round_name}.")
         print(rnd)
 
@@ -378,9 +395,161 @@ class Controller:
                 case 3:
                     break
 
-    def display_reports(self):
-        print(Fore.YELLOW + "\nWork in progress...\n")
+    def display_reports_sub_menu(self):
+        while True:
+            self.view.display_reports_menu()
+            submenu = self.view.prompt_for_reports_menu()
 
+            match int(submenu):
+                case 1:
+                    self.display_report(1)
+                case 2:
+                    self.display_report(2)
+                case 3:
+                    self.display_report(3)
+                case 4:
+                    self.display_report(4)
+                case 5:
+                    break
+
+    @staticmethod
+    def save_report(path, content):
+        try:
+            output_path = Path(path)
+            output_path.parent.mkdir(exist_ok=True)
+            with open(path, "w", encoding="utf-8") as html_file:
+                html_file.write(content)
+                return True
+
+        except FileNotFoundError:
+            print(f"{path} : ❌ file not found !")
+            return False
+
+    def display_report(self, report):
+        while True:
+            answer = self.view.prompt_for_generating_report()
+            if answer == "y" or answer == "Y":
+                path = Path()
+                content=""
+                match report:
+                    case 1:
+                        content = self.generate_report_alphabetically_players()
+                        path = ALPHABETICALLY_PLAYERS_REPORT
+
+                    case 2:
+                        content = self.generate_report_tournaments()
+                        path = ALL_TOURNAMENTS_REPORT
+
+                    case 3:
+                        # Get tournaments
+                        tournaments = self.get_all_tournaments()
+
+                        tournament_name = self.view.prompt_for_selecting_tournament(tournaments)
+                        print(tournament_name)
+                        current_tournament = Tournament("","")
+
+                        for tournament in tournaments:
+                            if tournament.name == tournament_name:
+                                current_tournament = tournament
+
+                        content = self.generate_report_current_tournament_players(current_tournament)
+                        path = CURRENT_TOURNAMENT_PLAYERS_REPORT
+
+                    case 4:
+                        # Get tournaments
+                        tournaments = self.get_all_tournaments()
+
+                        tournament_name = self.view.prompt_for_selecting_tournament(tournaments)
+                        print(tournament_name)
+                        current_tournament = Tournament("", "")
+
+                        for tournament in tournaments:
+                            if tournament.name == tournament_name:
+                                current_tournament = tournament
+
+                        content = self.generate_report_current_tournament_all_rounds_and_matches(current_tournament)
+                        path = CURRENT_TOURNAMENT_ROUNDS_AND_MATCHES_REPORT
+
+                self.save_report(path, content)
+                print("The HTML report has been generated.")
+                print(f"Here ⯈ {path}\n")
+                break
+
+            elif answer == "n" or answer == "N":
+                print("Ok, cancelled.")
+                break
+            else:
+                print(Fore.RED + "❌ You must answer yes or no (y/n).")
+                continue
+
+    def generate_report_alphabetically_players(self):
+        env = Environment(loader=FileSystemLoader("."))
+        template = env.get_template(ALPHABETICALLY_PLAYERS_TEMPLATE_HTML)
+
+        # Get players
+        players = self.get_players()
+
+        # Sort players alphabetically
+        sorted_players = sorted(players, key=lambda p: p.name)
+
+        # Display
+        print(f"{len(sorted_players)} players alphabetically sorted.\n")
+        print(f"{Players(sorted_players)}\n")
+
+        # Generate HTML report content
+        html = template.render(players=sorted_players)
+
+        return html
+
+    def generate_report_tournaments(self):
+        # Get tournaments
+        tournaments = self.get_all_tournaments()
+
+        # Sort tournaments alphabetically
+        sorted_tournaments = sorted(tournaments, key=lambda t: t.name)
+
+        env = Environment(loader=FileSystemLoader("."))
+        template = env.get_template(TOURNAMENTS_TEMPLATE_HTML)
+
+        # Display
+        print(f"{Tournaments(sorted_tournaments)}\n")
+
+        # Generate HTML report content
+        html = template.render(tournaments=sorted_tournaments)
+
+        return html
+
+    @staticmethod
+    def generate_report_current_tournament_players(tournament):
+        env = Environment(loader=FileSystemLoader("."))
+        template = env.get_template(CURRENT_TOURNAMENT_PLAYERS_TEMPLATE_HTML)
+
+        # Display
+        print(f"\nThe players of selected tournament \"{tournament.name}\":\n")
+        for player in tournament.players:
+            print(f"{player}")
+
+        sorted_players = sorted(tournament.players, key=lambda p: p.name)
+        tournament.players = sorted_players
+        # Generate HTML report content
+        html = template.render(tournament=tournament)
+
+        return html
+
+    @staticmethod
+    def generate_report_current_tournament_all_rounds_and_matches(tournament):
+        env = Environment(loader=FileSystemLoader("."))
+        template = env.get_template(CURRENT_TOURNAMENT_ROUNDS_MATCHES_TEMPLATE_HTML)
+
+        # Display
+        print(f"\nAll the rounds and matches of selected tournament \"{tournament.name}\":\n")
+        for rnd in tournament.rounds:
+            print(rnd)
+
+        # Generate HTML report content
+        html = template.render(tournament=tournament)
+
+        return html
 
 if __name__ == "__main__":
 

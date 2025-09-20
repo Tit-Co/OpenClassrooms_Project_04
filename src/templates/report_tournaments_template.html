@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report - All Tournaments</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #0898ec; margin-bottom: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; vertical-align: top; }
+        th { background-color: #f4f4f4; }
+        tr:nth-child(even) { background-color: #fafafa; }
+        .tournament-name { font-weight: bold; color: #333; text-align: center;}
+        .numeric { text-align: center; }
+        .description { color: #555; font-style: italic; max-width: 300px; text-align: center;}
+    </style>
+</head>
+<body>
+    <h1>Report ➤ All tournaments</h1>
+    <table>
+        <tr><th>Name</th><th>Place</th><th>Start Date</th><th>End Date</th><th>Rounds Number</th><th>Current Round</th><th>Manager's Description</th></tr>
+        {% for t in tournaments %}
+        <tr>
+            <td class="tournament-name">{{ t.name }}</td>
+            <td>{{ t.place }}</td>
+            <td>{{ t.start_date }}</td>
+            <td>{{ t.end_date }}</td>
+            <td class="numeric">{{ t.rounds_number }}</td>
+            <td class="numeric">{{ t.current_round }}</td>
+            <td class="description">{{ t.description }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

@@ -5,7 +5,7 @@ import string
 from collections import defaultdict, UserList
 from datetime import datetime
 from pathlib import Path
-from colorama import Fore, init
+from colorama import Fore, Style, Back, init
 init(autoreset=True)
 
 
@@ -19,9 +19,9 @@ PLAYERS_DATA_JSON = TOURNAMENT_FOLDER / Path("./players.json")
 class Match:
     def __init__(self, player1, player2, score1=0, score2=0):
         if random.choice([True, False]):
-            self.match_tuple = ([player1, 0, "white"], [player2, 0, "black"])
+            self.match_tuple = ([player1, score1, "⚪"], [player2, score2, "⚫"])
         else:
-            self.match_tuple = ([player2, 0, "white"], [player1, 0, "black"])
+            self.match_tuple = ([player2, score2, "⚪"], [player1, score1, "⚫"])
 
     def __iter__(self):
         return iter(self.match_tuple)
@@ -33,22 +33,38 @@ class Match:
         s1_display = s1 if s1 is not None else 0
         s2_display = s2 if s2 is not None else 0
 
-        return (f"┝╍ {p1} - {c1.upper()} - score: {s1_display}\n"
-                f"│ VS\n"
-                f"┝╍ {p2} - {c2.upper()} - score: {s2_display}\n")
+        prefix = Fore.WHITE + Style.BRIGHT + "┝╍ "
+        color1 = Fore.WHITE + f"{c1.upper()}"
+        color2 = Fore.WHITE + f"{c2.upper()}"
+        sep = " - "
+        score = " - score: "
+        line1 = prefix + f"{p1}" + sep + color1 + score + f"{s1_display}\n"
+        bar = "│ "
+        vs = Fore.YELLOW + Style.DIM + "VS\n"
+        line2 = prefix + f"{p2}" + sep + color2 + score + f"{s2_display}\n"
+        return line1 + bar + vs + line2
 
     def __repr__(self):
         return str(self.match_tuple)
 
-    def set_scores(self, score1, score2):
+    def set_scores(self, p1, score1, p2, score2):
         """
         Method that sets the scores of the match.
         Args:
+            p1 (player): The player 1 associated to score 1.
             score1 (float): The score 1.
+            p2 (player): The player 2 associated to score 2.
             score2 (float): The score 2.
         """
-        self.match_tuple[0][1] = score1
-        self.match_tuple[1][1] = score2
+        if self.match_tuple[0][0] == p1:
+            self.match_tuple[0][1] = score1
+            self.match_tuple[1][1] = score2
+        elif self.match_tuple[0][0] == p2:
+
+            self.match_tuple[0][1] = score2
+            self.match_tuple[1][1] = score1
+        else:
+            print("Scores bug !")
 
     def set_colors(self, color1, color2):
         """
@@ -85,7 +101,11 @@ class Player:
         self.identifier = identifier
 
     def __str__(self):
-        return f"{self.identifier} - {self.name.upper()} {self.first_name} born on {self.birth_date}"
+        str_id = Fore.RED + Style.DIM + f"{self.identifier}"
+        sep = Fore.WHITE + Style.NORMAL + " - "
+        str_na = Fore.BLUE + Style.BRIGHT + f"{self.first_name} {self.name.upper()} "
+        str_da = Fore.WHITE + Style.NORMAL + f"born on {self.birth_date}"
+        return str_id + sep + str_na + str_da
 
     def __repr__(self):
         return str(self)
@@ -108,10 +128,11 @@ class Players(UserList):
         prefix = " " * indent
         players_str = ""
         for player in self:
-            players_str += f"{prefix}│ ┝╍ {player}\n"
-        return (f"{prefix}┌ All players :\n"
-                f"{players_str}"
-                f"{prefix}└──────────────")
+            prefix_str = Fore.WHITE + Style.BRIGHT + f"{prefix}│ ┝╍ "
+            players_str += prefix_str + f"{player}\n"
+        header = Fore.WHITE + Style.BRIGHT + f"{prefix}┌ ALL PLAYERS :\n"
+        end = Fore.WHITE + Style.BRIGHT + f"{prefix}└──────────────"
+        return header + f"{players_str}" + end
 
     def __repr__(self):
         return str(self)
@@ -162,16 +183,6 @@ class Players(UserList):
                 attrs["birth_date"],
                 identifier
             ))
-
-    """ def create_static_players(self):
-        player1 = Player("Marie", "Nicolas", "28/07/1979", "AH13765")
-        player2 = Player("Esneult", "Samuel", "01/05/1979", "CT54896")
-        player3 = Player("Dupont", "Jean", "24/05/1987", "BL17953")
-        player4 = Player("Testut", "Sylvie", "05/03/1976", "LM47852")
-        self.add_player(player1)
-        self.add_player(player2)
-        self.add_player(player3)
-        self.add_player(player4)"""
 
     @staticmethod
     def generate_random_identifier():
@@ -227,15 +238,15 @@ class Players(UserList):
         except FileNotFoundError:
             print(f"{file_path} : ❌ file not found !\n")
             while True:
-                answer = input(Fore.YELLOW + f"Do you want to create the file ? (Y/N)\n")
-                if answer == "Y" or answer == "y":
+                answer = input(Fore.YELLOW + "Do you want to create the file ? (y/n)\n")
+                if answer in ["Y", "y"]:
                     if self.save_players_to_json(PLAYERS_DATA_JSON):
                         print(Fore.GREEN + "File Created !\n")
                     return True
-                elif answer == "N" or answer == "n":
+                elif answer in ["N", "n"]:
                     return False
                 else:
-                    print(Fore.RED + "You did not enter Y or N.\n")
+                    print(Fore.RED + "You did not enter y or n.\n")
                     continue
             return False
 
@@ -247,6 +258,7 @@ class Players(UserList):
         Returns (bool): True if the saved players were saved. False otherwise.
         """
         try:
+            file_path.parent.mkdir(exist_ok=True)
             with open(file_path, "w", encoding="utf-8") as json_file:
                 players_dict = self.convert_to_dict()
                 json.dump(players_dict, json_file, ensure_ascii=False, indent=4)
@@ -278,10 +290,15 @@ class Round:
         self.end_time = None
 
     def __str__(self):
-        start = f"{self.start_date} {self.start_time}" if self.start_date and self.start_time else "Not started"
-        end = f"{self.end_date} {self.end_time}" if self.end_date and self.end_time else "Not finished"
+        start = Fore.WHITE + Style.DIM + f"{self.start_date} {self.start_time}" if self.start_date and self.start_time else "Not started"
+        end = Fore.WHITE + Style.DIM + f"{self.end_date} {self.end_time}" if self.end_date and self.end_time else "Not finished"
 
-        round_str = f"{self.round_name} (from {start} → {end})"
+        prefix_dates = Fore.WHITE + Style.DIM + " (from "
+        sep = Fore.WHITE + Style.DIM + " → "
+        suffix_dates = Fore.WHITE + Style.DIM + ")"
+        round_name = Fore.WHITE + Style.BRIGHT + f"{self.round_name}"
+
+        round_str = round_name + prefix_dates + f"{start}" + sep + f"{end}" + suffix_dates
 
         if not self.matches:
             return f"The {self.round_name} has no matches yet."
@@ -290,8 +307,10 @@ class Round:
         for match in self.matches:
             matches_str += f"{match}\n"
 
-        return (f"The {round_str} has {len(self.matches)} matches:\n"
-                f"{matches_str}")
+        prefix = Fore.WHITE + Style.BRIGHT + "The "
+        middle = Fore.WHITE + Style.BRIGHT + " has "
+        suffix = Fore.WHITE + Style.BRIGHT + " matches:\n\n"
+        return prefix + f"{round_str}" + middle + f"{len(self.matches)}" + suffix + f"{matches_str}"
 
     def __repr__(self):
         return str(self)
@@ -350,7 +369,7 @@ class Round:
 
 
 class Tournament:
-    def __init__(self, name, place, start_date, end_date, players=None, description="", current_round=1,
+    def __init__(self, name, place, start_date=None, end_date=None, players=None, description="", current_round=1,
                  rounds_number=NUMBER_OF_ROUNDS):
         self.name = name
         self.place = place
@@ -359,22 +378,33 @@ class Tournament:
         self.rounds_number = rounds_number
         self.current_round = current_round
         self.rounds = []
-        self.players = players if players else Players()
         self.description = description
 
+        if players is None:
+            self.players = Players()
+        elif isinstance(players, Players):
+            self.players = players
+        else:
+            self.players = Players(players)
+
+
     def __str__(self):
-        rounds_str = ""
+        rounds_str=""
         if self.rounds:
-            rounds_str += " ┌ All rounds :\n"
+            prefix = Fore.MAGENTA + Style.BRIGHT + "│"
+            prefix_rnd = Fore.WHITE + Style.NORMAL + "   │"
+            rounds_str = prefix + Fore.WHITE + Style.BRIGHT + "   ┌ ALL ROUNDS :\n"
             for rnd in self.rounds:
                 for line in str(rnd).splitlines():
-                    rounds_str += f"    │ {line}\n"
-            rounds_str += "    └──────────────\n"
+                    rounds_str += prefix + prefix_rnd + f" {line}\n"
+            suffix = Fore.WHITE + Style.NORMAL + "   └──────────────\n"
+            rounds_str += prefix + suffix
 
-        return (f"{self.name} ({self.place}, {self.start_date} → {self.end_date}, "
-                f"currently in round {self.current_round} of {self.rounds_number} rounds, "
-                f"description : {self.description})\n"
-                f"{rounds_str}")
+        name = Fore.MAGENTA + Style.BRIGHT + f"{self.name.upper()} "
+        place_dates = Fore.WHITE + Style.NORMAL + (f"({self.place}, {self.start_date} → {self.end_date}, "
+                                                   f"currently in round {self.current_round} of {self.rounds_number} "
+                                                   f"rounds, description : {self.description})\n")
+        return name + place_dates + f"{rounds_str}"
 
     def __repr__(self):
         return str(self)
@@ -409,6 +439,35 @@ class Tournament:
             tournament_round (Round): Round object.
         """
         self.rounds.append(tournament_round)
+
+    @staticmethod
+    def compute_player_scores(tournament):
+        """
+        Method that computes the player scores for all players in the tournament.
+        Args:
+            tournament (Tournament): Tournament object.
+
+        Returns:
+            A score associated to player's id.
+        """
+        id_to_player = {p.identifier: p for p in tournament.players}
+        # init scores to 0.0
+        scores = {pid: 0.0 for pid in id_to_player.keys()}
+
+        for rnd in getattr(tournament, "rounds", []):
+            for match in getattr(rnd, "matches", []) or []:
+                # match.match_tuple = ([Player, score, color], [Player, score, color])
+                p1_obj, s1, _ = match.match_tuple[0]
+                p2_obj, s2, _ = match.match_tuple[1]
+
+                # convert in float if necessary
+                s1_val = float(s1) if s1 is not None else 0.0
+                s2_val = float(s2) if s2 is not None else 0.0
+
+                scores[p1_obj.identifier] = scores.get(p1_obj.identifier, 0.0) + s1_val
+                scores[p2_obj.identifier] = scores.get(p2_obj.identifier, 0.0) + s2_val
+
+        return scores, id_to_player
 
     def sort_players_by_score(self, verbose=False):
         """
@@ -449,6 +508,82 @@ class Tournament:
         sorted_players = sorted(self.players, key=lambda p: scores.get(p.identifier, 0.0), reverse=True)
         self.players[:] = sorted_players
 
+    def create_round(self, round_number):
+        """
+        Method that creates a round object.
+        Args:
+            round_number (int): The round number.
+        """
+        if round_number == 1:
+            # shuffles players
+            self.players.shuffle()
+        else:
+            self.sort_players_by_score()
+
+        # create round
+        round_obj = Round(f"Round {round_number}")
+
+        # create matches
+        self.create_matches(self.players, round_obj)
+
+        # Set start date/time
+        round_obj.set_start_date()
+
+        # Append round to tournament
+        self.rounds.append(round_obj)
+
+        print(round_obj)
+
+    def create_matches(self, players, round_obj):
+        """
+        Creates matches for a given round, ensuring players haven't played each other before.
+
+        Args:
+            players (Players): The players participating in the tournament.
+            round_obj (Round): The round object to populate with matches.
+        """
+        players_list = players.copy()
+        round_obj.matches = []
+
+        while players_list:
+            first = players_list.pop(0)
+
+            # seek a second player who has not played with the first one
+            found_opponent = False
+            for i, candidate in enumerate(players_list):
+                if not self.match_already_played(first, candidate):
+                    second = players_list.pop(i)
+                    round_obj.matches.append(Match(first, second))
+                    found_opponent = True
+                    break
+
+            # If no suitable candidate found, pair with the first available
+            if not found_opponent and players_list:
+                second = players_list.pop(0)
+                round_obj.matches.append(Match(first, second))
+
+    def match_already_played(self, player1, player2):
+        """
+        Method that checks if two players have already faced each other in this tournament.
+        Args:
+            player1 (Player): Player 1 object.
+            player2 (Player): Player 2 object.
+
+        Returns:
+            A boolean indicating if the player 1 has already played with player 2.
+        """
+        pair_to_check = frozenset([player1.identifier, player2.identifier])
+
+        for rnd in self.rounds:
+            for match in rnd.matches:
+                p1 = match.match_tuple[0][0].identifier
+                p2 = match.match_tuple[1][0].identifier
+                existing_pair = frozenset([p1, p2])
+
+                if pair_to_check == existing_pair:
+                    return True
+        return False
+
     def convert_to_dict(self):
         """
         Method that converts the player's data to a dictionary.
@@ -473,8 +608,12 @@ class Tournaments(UserList):
     def __str__(self):
         tournaments_str = ""
         for tournament in self:
-            tournaments_str += f"│ ┝╍ {tournament}"
-        return f"┌ All tournaments :\n{tournaments_str}└──────────────────"
+            prefix = Fore.MAGENTA + Style.NORMAL + "├─├─ "
+            t = Fore.MAGENTA + Style.NORMAL + f"{tournament}"
+            tournaments_str += prefix + t
+        title = Fore.MAGENTA + Style.NORMAL + "┌ ALL TOURNAMENTS :\n"
+        suffix = Fore.MAGENTA + Style.NORMAL + "└──────────────────"
+        return title + f"{tournaments_str}" + suffix
 
     def __repr__(self):
         return str(self)
@@ -549,7 +688,7 @@ class Tournaments(UserList):
                     c2 = match_attrs["player2"]["color"]
 
                     match = Match(p1, p2)
-                    match.set_scores(s1, s2)
+                    match.set_scores(p1, s1, p2, s2)
                     match.set_colors(c1, c2)
                     rnd.matches.append(match)
 
@@ -576,15 +715,15 @@ class Tournaments(UserList):
         except FileNotFoundError:
             print(f"{file_path} : ❌ file not found !\n")
             while True:
-                answer = input("Do you want to create the file ? (Y/N)\n")
-                if answer == "Y" or answer == "y":
+                answer = input("Do you want to create the file ? (y/n)\n")
+                if answer in ["Y", "y"]:
                     if self.save_tournament_to_json(TOURNAMENTS_DATA_JSON):
                         print(Fore.GREEN + "File Created !\n")
                     return True
-                elif answer == "N" or answer == "n":
+                elif answer in ["N", "n"]:
                     return False
                 else:
-                    print(Fore.RED + "You did not enter Y or N.\n")
+                    print(Fore.RED + "You did not enter y or n.\n")
                     continue
             return False
 
@@ -598,6 +737,7 @@ class Tournaments(UserList):
             Returns a boolean indicating if the tournaments were saved successfully or not.
         """
         try:
+            file_path.parent.mkdir(exist_ok=True)
             with open(file_path, "w", encoding="utf-8") as json_file:
                 tournaments_dict = self.convert_to_dict()
                 json.dump(tournaments_dict, json_file, ensure_ascii=False, indent=4)

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report - Current Tournament Players</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #0898ec; margin-bottom: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #f4f4f4; }
+        .round-name { font-weight: bold; font-size: 1.1em; color: #444; }
+        .score { font-size: 1.2em; font-weight: bold; }
+        .vs { color: red; font-weight: bold; }
+        .color-white { color: #555; }
+        .color-black { color: #000; }
+        .subtable { width: 100%; border: none; margin-top: 5px; }
+        .subtable td { border: none; }
+    </style>
+</head>
+<body>
+    <h1>Report ➤ All rounds and matches of "{{ tournament.name }}"</h1>
+    <table>
+        <tr><th>Round</th><th>Start Date</th><th>End Date</th><th>Start Time</th><th>End Time</th><th>Matches</th></tr>
+        {% for r in tournament.rounds %}
+        <tr>
+            <td class="round-name"><h2>{{ r.round_name }}</h2></td>
+            <td>{{ r.start_date }}</td>
+            <td>{{ r.end_date }}</td>
+            <td>{{ r.start_time }}</td>
+            <td>{{ r.end_time }}</td>
+            <td>
+                <table class="subtable">
+                    {% for m in r.matches %}
+                    <tr>
+                        <td>{{ m.match_tuple[0][0].first_name }} {{ m.match_tuple[0][0].name|upper }}</td>
+                        <td>{{ m.match_tuple[0][2] }}</td>
+                        <td class="score">{{ m.match_tuple[0][1] }}</td>
+                        <td class="vs">VS</td>
+                        <td class="score">{{ m.match_tuple[1][1] }}</td>
+                        <td class="color-{{ m.match_tuple[1][2]|lower }}">{{ m.match_tuple[1][2] }}</td>
+                        <td>{{ m.match_tuple[1][0].first_name }} {{ m.match_tuple[1][0].name|upper }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

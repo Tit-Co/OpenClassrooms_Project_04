@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report - Current Tournament Players</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #0898ec; margin-bottom: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+        th { background-color: #f4f4f4; }
+        tr:nth-child(even) { background-color: #fafafa; }
+        .player-name { font-weight: bold; color: #333; text-align: center;}
+        .identifier { font-family: monospace; text-align: center; }
+        .birth-date { color: #666; text-align: center;}
+    </style>
+</head>
+<body>
+    <h1>Report ➤ All Players</h1>
+    <table>
+        <tr><th>Name</th><th>First Name</th><th>Identifier</th><th>Birth Date</th></tr>
+        {% for p in players %}
+        <tr>
+            <td class="player-name">{{ p.name }}</td>
+            <td>{{ p.first_name }}</td>
+            <td class="identifier">{{ p.identifier }}</td>
+            <td class="birth-date">{{ p.birth_date }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
