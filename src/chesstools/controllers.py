@@ -151,6 +151,9 @@ class Controller:
         """
         while True:
             name = self.view.prompt_for_tournament_name()
+            if name.lower() == "q":
+                return
+
             self.tournaments = self.get_all_tournaments()
             if any(t.name == name for t in self.tournaments):
                 print("❌ The tournament's name already exists. Please choose another one.\n")
@@ -263,16 +266,18 @@ class Controller:
 
             while True:
                 tournament_name = self.view.prompt_for_selecting_tournament(running_tournaments)
-                if not self.tournament_exists(tournament_name):
-                    print(Fore.RED + f"The tournament {tournament_name} does not exist. Please try again.\n")
-                    continue
-                elif self.get_tournament(tournament_name).is_completed():
-                    self.current_tournament = self.get_tournament(tournament_name)
+
+                if tournament_name.lower() == "q":
+                    return
+
+                tournament = self.get_tournament(tournament_name)
+
+                if tournament.is_completed():
+                    self.current_tournament = tournament
                     self.display_completed_tournament()
                     print(Fore.RED + "Tournament already completed ! Please choose another one.\n")
                     continue
-                else:
-                    break
+                break
 
             for tournament in self.tournaments:
                 if tournament.name == tournament_name:
@@ -339,6 +344,9 @@ class Controller:
         by the user. The new player datas are also saved in the json file.
         """
         name = self.view.prompt_for_player_name()
+        if name.lower() == "q":
+            return
+
         first_name = self.view.prompt_for_player_first_name()
         birth_date = self.view.prompt_for_player_birth_date()
         identifier = self.view.prompt_for_player_identifier()

@@ -119,7 +119,7 @@ class View:
             The answer converted to str.
         """
         while True:
-            name = input("▶ Enter the player name: ")
+            name = input("▶ Enter the player name (or enter 'q' to go back) : ")
             if not name:
                 print("❌ Empty string.")
                 continue
@@ -192,7 +192,7 @@ class View:
             The answer converted to str.
         """
         while True:
-            tournament_name = input("▶ Enter the tournament name: ")
+            tournament_name = input("▶ Enter the tournament name (or enter 'q' to go back) : ")
             if not tournament_name:
                 print("❌ Empty string.")
                 continue
@@ -376,6 +376,10 @@ class View:
         print("\n")
         while True:
             name = self.prompt_for_tournament_name()
+
+            if name.lower() == "q":
+                return "q"
+
             if not self.tournament_exists(name, tournaments):
                 print(f"❌ The tournament {name} does not exist.\n")
                 continue
