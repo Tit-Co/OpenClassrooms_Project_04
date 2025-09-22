@@ -3,6 +3,7 @@ from src.chesstools.controllers import Controller
 from src.chesstools.views import View
 from src.chesstools.models import Tournament, Player, Players
 
+
 class TestController(unittest.TestCase):
 
     def setUp(self):
@@ -91,5 +92,7 @@ class TestController(unittest.TestCase):
 
         self.assertTrue(played_pairs_round1.isdisjoint(played_pairs_round2))
 
+
 if __name__ == "__main__":
+
     unittest.main()

@@ -1,6 +1,7 @@
 import unittest
 from src.chesstools.models import Players, Player
 
+
 class TestPlayers(unittest.TestCase):
 
     def setUp(self):
@@ -22,5 +23,7 @@ class TestPlayers(unittest.TestCase):
         self.assertEqual(len(before), len(after))
         self.assertCountEqual(before, after)
 
+
 if __name__ == "__main__":
+
     unittest.main()

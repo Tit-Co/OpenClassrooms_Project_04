@@ -1,4 +1,4 @@
-from .models import Match, Player, Players, Round, Tournament, Tournaments
+from .models import Player, Players, Tournament, Tournaments
 from .views import View
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
@@ -17,7 +17,8 @@ PLAYERS_DATA_JSON = TOURNAMENT_FOLDER / Path("./players.json")
 ALPHABETICALLY_PLAYERS_REPORT = REPORTS_FOLDER / Path("./1_report_alphabetically_players.html")
 ALL_TOURNAMENTS_REPORT = REPORTS_FOLDER / Path("./2_report_all_tournaments.html")
 CURRENT_TOURNAMENT_PLAYERS_REPORT = REPORTS_FOLDER / Path("./3_report_current_tournament_players.html")
-CURRENT_TOURNAMENT_ROUNDS_AND_MATCHES_REPORT = REPORTS_FOLDER / Path("./4_report_current_tournament_rounds_matches.html")
+CURRENT_TOURNAMENT_ROUNDS_AND_MATCHES_REPORT = (REPORTS_FOLDER
+                                                / Path("./4_report_current_tournament_rounds_matches.html"))
 
 # Templates paths
 ALPHABETICALLY_PLAYERS_TEMPLATE_HTML = "./src/templates/report_alphabetically_players_template.html"
@@ -25,6 +26,7 @@ TOURNAMENTS_TEMPLATE_HTML = "./src/templates/report_tournaments_template.html"
 CURRENT_TOURNAMENT_PLAYERS_TEMPLATE_HTML = "./src/templates/report_current_tournament_players_template.html"
 CURRENT_TOURNAMENT_ROUNDS_MATCHES_TEMPLATE_HTML = ("./src/templates/report_current_tournament_"
                                                    "rounds_matches_template.html")
+
 
 class Controller:
     def __init__(self, the_view):
@@ -162,7 +164,13 @@ class Controller:
         description = self.view.prompt_for_tournament_description()
         players_number = self.view.prompt_for_tournament_players_number()
 
-        self.current_tournament = Tournament(name, place, start_date, end_date, players=Players(), description=description)
+        self.current_tournament = Tournament(name,
+                                             place,
+                                             start_date,
+                                             end_date,
+                                             players=Players(),
+                                             description=description)
+
         players_to_play = self.select_tournament_players(players_number)
 
         self.current_tournament.add_players(players_to_play)
@@ -250,7 +258,7 @@ class Controller:
                 running_tournaments.add_tournament(tournament)
 
         if len(running_tournaments) == 0:
-            print(Fore.RED + f"⛔ All tournaments are completed. You can not add any score.\n")
+            print(Fore.RED + "⛔ All tournaments are completed. You can not add any score.\n")
         else:
 
             while True:
@@ -261,7 +269,7 @@ class Controller:
                 elif self.get_tournament(tournament_name).is_completed():
                     self.current_tournament = self.get_tournament(tournament_name)
                     self.display_completed_tournament()
-                    print(Fore.RED + f"Tournament already completed ! Please choose another one.\n")
+                    print(Fore.RED + "Tournament already completed ! Please choose another one.\n")
                     continue
                 else:
                     break
@@ -270,7 +278,6 @@ class Controller:
                 if tournament.name == tournament_name:
                     self.current_tournament = tournament
             print(Fore.YELLOW + f"\nSelected tournament: {tournament_name}.")
-
 
             if self.current_tournament.current_round < 4:
                 # set scores for current round
@@ -300,7 +307,6 @@ class Controller:
 
                 # Tournament completed
                 self.display_completed_tournament()
-
 
     def set_tournament_scores(self):
         """
@@ -430,7 +436,7 @@ class Controller:
             answer = self.view.prompt_for_generating_report()
             if answer == "y" or answer == "Y":
                 path = Path()
-                content=""
+                content = ""
                 match report:
                     case 1:
                         content = self.generate_report_alphabetically_players()
@@ -446,7 +452,7 @@ class Controller:
 
                         tournament_name = self.view.prompt_for_selecting_tournament(tournaments)
                         print(tournament_name)
-                        current_tournament = Tournament("","")
+                        current_tournament = Tournament("", "")
 
                         for tournament in tournaments:
                             if tournament.name == tournament_name:
@@ -550,6 +556,7 @@ class Controller:
         html = template.render(tournament=tournament)
 
         return html
+
 
 if __name__ == "__main__":
 

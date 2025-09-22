@@ -5,7 +5,7 @@ import string
 from collections import defaultdict, UserList
 from datetime import datetime
 from pathlib import Path
-from colorama import Fore, Style, Back, init
+from colorama import Fore, Style, init
 init(autoreset=True)
 
 
@@ -290,8 +290,10 @@ class Round:
         self.end_time = None
 
     def __str__(self):
-        start = Fore.WHITE + Style.DIM + f"{self.start_date} {self.start_time}" if self.start_date and self.start_time else "Not started"
-        end = Fore.WHITE + Style.DIM + f"{self.end_date} {self.end_time}" if self.end_date and self.end_time else "Not finished"
+        start = Fore.WHITE + Style.DIM + f"{self.start_date} {self.start_time}" \
+            if self.start_date and self.start_time else "Not started"
+        end = Fore.WHITE + Style.DIM + f"{self.end_date} {self.end_time}" \
+            if self.end_date and self.end_time else "Not finished"
 
         prefix_dates = Fore.WHITE + Style.DIM + " (from "
         sep = Fore.WHITE + Style.DIM + " → "
@@ -387,9 +389,8 @@ class Tournament:
         else:
             self.players = Players(players)
 
-
     def __str__(self):
-        rounds_str=""
+        rounds_str = ""
         if self.rounds:
             prefix = Fore.MAGENTA + Style.BRIGHT + "│"
             prefix_rnd = Fore.WHITE + Style.NORMAL + "   │"

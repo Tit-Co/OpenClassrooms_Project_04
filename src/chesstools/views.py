@@ -416,5 +416,5 @@ class View:
         Returns:
             The answer.
         """
-        answer = input(f"\n▶ Do you want to generate the HTML report ? (y/n) :\n")
+        answer = input("\n▶ Do you want to generate the HTML report ? (y/n) :\n")
         return answer

@@ -1,6 +1,6 @@
 import unittest
-from datetime import datetime
 from src.chesstools.models import Tournament, Round, Match, Player, Players
+
 
 class TestTournament(unittest.TestCase):
 
@@ -38,5 +38,7 @@ class TestTournament(unittest.TestCase):
         result = self.tournament.match_already_played(self.p1, p3)
         self.assertFalse(result)
 
+
 if __name__ == "__main__":
+
     unittest.main()
