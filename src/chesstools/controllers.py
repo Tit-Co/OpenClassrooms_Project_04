@@ -216,7 +216,7 @@ class Controller:
             print(
                 Style.BRIGHT + Fore.RED +
                 f"\n⮞ 🏆 The winner of {self.current_tournament.name} is "
-                f"{winner.identifier} : {winner.name} {winner.first_name} (score {max_score}).\n")
+                f"{winner.identifier} : {winner.first_name} {winner.name.upper()} (score {max_score} point(s).\n")
         else:
             # several winners
             print(
@@ -226,7 +226,7 @@ class Controller:
             for w in winners:
                 print(
                     Style.BRIGHT + Fore.RED +
-                    f"   - {w.identifier} : {w.name} {w.first_name} (tie at {max_score}).\n"
+                    f"   - {w.identifier} : {w.first_name} {w.name.upper()} (tie at {max_score} point(s)).\n"
                 )
 
     def tournament_exists(self, tournament_name):
