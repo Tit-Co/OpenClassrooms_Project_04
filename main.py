@@ -1,6 +1,10 @@
-from src.chesstools.controllers import Controller
-from src.chesstools.views import View
+from src.chesstools.controllers import MainController
 
-view = View()
-controller = Controller(view)
-controller.run()
+
+def main():
+    controller = MainController()
+    controller.run()
+
+
+if __name__ == '__main__':
+    main()

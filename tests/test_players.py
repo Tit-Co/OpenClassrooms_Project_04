@@ -6,21 +6,20 @@ class TestPlayers(unittest.TestCase):
 
     def setUp(self):
         self.players = Players()
-        self.p1 = Player("Doe", "John", "JD123", "1990-01-01")
-        self.p2 = Player("Smith", "Anna", "AS456", "1992-05-05")
+        self.player_1 = Player(name="Doe", first_name="John", identifier="JD123", birth_date="1990-01-01")
+        self.player_2 = Player(name="Smith", first_name="Anna", identifier="AS456", birth_date="1992-05-05")
 
     def test_add_player(self):
-        self.players.add_player(self.p1)
-        self.assertIn(self.p1, self.players)
+        self.players.add_player(self.player_1)
+        self.assertIn(self.player_1, self.players)
 
     def test_shuffle_players(self):
-        self.players.add_player(self.p1)
-        self.players.add_player(self.p2)
+        self.players.add_player(self.player_1)
+        self.players.add_player(self.player_2)
         before = self.players[:]
         self.players.shuffle()
         after = self.players
 
-        self.assertEqual(len(before), len(after))
         self.assertCountEqual(before, after)
 
 

@@ -1,4 +1,4 @@
 env/
+.venv/
 data/
-flake8-report/
 .idea/

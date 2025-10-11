@@ -1,6 +1,5 @@
 import unittest
-from src.chesstools.controllers import Controller
-from src.chesstools.views import View
+from src.chesstools.controllers import MainController
 from src.chesstools.models import Tournament, Player, Players
 
 
@@ -8,10 +7,10 @@ class TestController(unittest.TestCase):
 
     def setUp(self):
         self.players = Players([
-            Player("Doe", "John", "JD1", "1990-01-01"),
-            Player("Smith", "Anna", "AS2", "1991-02-02"),
-            Player("Brown", "Charlie", "CB3", "1992-03-03"),
-            Player("Taylor", "Emma", "ET4", "1993-04-04"),
+            Player(name="Doe", first_name="John", identifier="JD1", birth_date="1990-01-01"),
+            Player(name="Smith", first_name="Anna", identifier="AS2", birth_date="1991-02-02"),
+            Player(name="Brown", first_name="Charlie", identifier="CB3", birth_date="1992-03-03"),
+            Player(name="Taylor", first_name="Emma", identifier="ET4", birth_date="1993-04-04"),
         ])
 
         self.tournament = Tournament(
@@ -24,16 +23,16 @@ class TestController(unittest.TestCase):
             rounds_number=2,
             current_round=1,
         )
-        self.view = View()
-        self.controller = Controller(self.view)
-        self.controller.current_tournament = self.tournament
+
+        self.controller = MainController()
+        self.controller.tournament_controller.current_tournament = self.tournament
 
     def test_create_first_round(self):
-        self.controller.current_tournament.create_round(1)
+        self.controller.tournament_controller.current_tournament.create_round(1)
 
         self.assertEqual(len(self.tournament.rounds), 1)
 
-        created_round = self.controller.current_tournament.rounds[0]
+        created_round = self.controller.tournament_controller.current_tournament.rounds[0]
         self.assertEqual(len(created_round.matches), 2)
 
         all_players_in_matches = []
@@ -45,14 +44,14 @@ class TestController(unittest.TestCase):
 
     def test_create_second_round(self):
 
-        self.controller.current_tournament.create_round(1)
+        self.controller.tournament_controller.current_tournament.create_round(1)
 
         self.players[0].score = 1  # John Doe
         self.players[1].score = 1  # Anna Smith
         self.players[2].score = 0  # Charlie Brown
         self.players[3].score = 0  # Emma Taylor
 
-        self.controller.current_tournament.create_round(2)
+        self.controller.tournament_controller.current_tournament.create_round(2)
 
         self.assertEqual(len(self.tournament.rounds), 2)
 
@@ -67,28 +66,28 @@ class TestController(unittest.TestCase):
         self.assertCountEqual(all_players_in_matches, self.players)
 
     def test_no_repeat_matches_between_rounds(self):
-        self.controller.current_tournament.create_round(1)
+        self.controller.tournament_controller.current_tournament.create_round(1)
 
         self.players[0].score = 1  # John
         self.players[1].score = 1  # Anna
         self.players[2].score = 0  # Charlie
         self.players[3].score = 0  # Emma
 
-        round1_matches = self.controller.current_tournament.rounds[0].matches
+        round1_matches = self.controller.tournament_controller.current_tournament.rounds[0].matches
         played_pairs_round1 = set()
-        for m in round1_matches:
-            p1 = m.match_tuple[0][0]
-            p2 = m.match_tuple[1][0]
-            played_pairs_round1.add(frozenset([p1, p2]))
+        for match in round1_matches:
+            player_1 = match.match_tuple[0][0]
+            player_2 = match.match_tuple[1][0]
+            played_pairs_round1.add(frozenset([player_1, player_2]))
 
-        self.controller.current_tournament.create_round(2)
+        self.controller.tournament_controller.current_tournament.create_round(2)
 
-        round2_matches = self.controller.current_tournament.rounds[1].matches
+        round2_matches = self.controller.tournament_controller.current_tournament.rounds[1].matches
         played_pairs_round2 = set()
-        for m in round2_matches:
-            p1 = m.match_tuple[0][0]
-            p2 = m.match_tuple[1][0]
-            played_pairs_round2.add(frozenset([p1, p2]))
+        for match in round2_matches:
+            player_1 = match.match_tuple[0][0]
+            player_2 = match.match_tuple[1][0]
+            played_pairs_round2.add(frozenset([player_1, player_2]))
 
         self.assertTrue(played_pairs_round1.isdisjoint(played_pairs_round2))
 

@@ -1,9 +1,13 @@
-from .models import Player, Players, Tournament, Tournaments
-from .views import View
 from pathlib import Path
+
+from colorama import Fore, init
 from jinja2 import Environment, FileSystemLoader
-from colorama import Fore, Style, init
+
+from .models import Player, Players, Tournament, Tournaments
+from .views import MainView, PlayerView, ReportView, TournamentView
+
 init(autoreset=True)
+
 
 # Base paths
 TOURNAMENT_FOLDER = Path("./data/tournaments/")
@@ -28,66 +32,86 @@ CURRENT_TOURNAMENT_ROUNDS_MATCHES_TEMPLATE_HTML = ("./src/templates/report_curre
                                                    "rounds_matches_template.html")
 
 
-class Controller:
-    def __init__(self, the_view):
-        # models
-        self.current_tournament = None
-        self.tournaments = Tournaments()
-
+class MainController:
+    def __init__(self):
         # views
-        self.view = the_view
+        self.view = MainView()
+
+        self.env = Environment(loader=FileSystemLoader('.'))
+
+        # load all templates
+        self.templates = {
+            "players": self.env.get_template(ALPHABETICALLY_PLAYERS_TEMPLATE_HTML),
+            "all_tournaments": self.env.get_template(TOURNAMENTS_TEMPLATE_HTML),
+            "current_tournament_players": self.env.get_template(CURRENT_TOURNAMENT_PLAYERS_TEMPLATE_HTML),
+            "tournament_rounds_and_matches": self.env.get_template(CURRENT_TOURNAMENT_ROUNDS_MATCHES_TEMPLATE_HTML)
+        }
+
+        # Controllers
+        self.player_controller = PlayerController()
+        self.tournament_controller = TournamentController(self)
+        self.report_controller = ReportController(self)
 
     def run(self):
         """
-        Method that runs the controller.
+        Method that runs the main controller.
         """
         while True:
             self.view.display_main_menu()
             menu = self.view.prompt_for_main_menu()
 
-            match menu:
-                case 1:
-                    if len(self.get_players()) >= 4:
-                        self.create_tournament()
-                    elif len(self.get_players()) in [1, 2, 3]:
-                        print(Fore.RED + "\nThere is not enough players to create a tournament.\n")
-                        continue
-                    else:
-                        print(Fore.RED + "\nNo players found. "
-                                         "You can not create a new tournament before adding new players.\n")
-                        continue
-                case 2:
-                    self.display_tournaments_sub_menu()
-                case 3:
-                    self.add_player_in_database()
-                case 4:
-                    self.display_players()
-                case 5:
-                    self.display_a_tournament()
-                case 6:
-                    self.display_tournaments()
-                case 7:
-                    self.display_reports_sub_menu()
-                case 8:
-                    print(Style.BRIGHT + Fore.RED + "👋 Goodbye ! 👋")
-                    break
+            # Dispatching table
+            actions = {
+                1: self.tournament_controller.tournaments_menu,
+                2: self.player_controller.players_menu,
+                3: self.report_controller.reports_menu,
+                4: self.goodbye
+            }
 
-    @staticmethod
-    def get_players():
-        """
-        Method that gets players object from the json file
-        Returns:
-            Players object.
-        """
-        print(Fore.YELLOW + "⮞ Getting players...\n")
-        players = Players()
+            action = actions.get(menu)
+            action()
 
-        # loads players datas from json
-        if players.load_players_from_json(PLAYERS_DATA_JSON):
-            return players
-        else:
-            print(Style.BRIGHT + Fore.RED + "👋 Goodbye ! 👋")
-            exit(1)
+    def goodbye(self):
+        """
+        Method that close the application.
+        """
+        self.view.display_goodbye()
+        exit(1)
+
+
+class TournamentController:
+    def __init__(self, main_controller):
+        # models
+        self.current_tournament = None
+        self.tournaments = Tournaments()
+        self.main_controller = main_controller
+
+        # View
+        self.view = TournamentView()
+
+    def tournaments_menu(self):
+        """
+        Method that displays the "tournaments" menu.
+        """
+        while True:
+            self.view.display_tournaments_submenu()
+            menu = self.view.prompt_for_tournaments_submenu()
+
+            # Dispatching table
+            actions = {
+                1: self.create_tournament_init,
+                2: self.display_update_tournament_sub_menu,
+                3: self.display_a_tournament,
+                4: self.display_tournaments,
+                5: None
+            }
+
+            action = actions.get(menu)
+
+            if action is None:
+                break
+
+            action()
 
     def get_tournament(self, tournament_name):
         """
@@ -114,18 +138,8 @@ class Controller:
         tournaments = Tournaments()
 
         # loads tournaments datas from json
-        if tournaments.load_tournaments_from_json(TOURNAMENTS_DATA_JSON):
-            return tournaments
-        else:
-            print(Style.BRIGHT + Fore.RED + "👋 Goodbye ! 👋")
-            exit(1)
-
-    def display_players(self):
-        """
-        Method that displays players object.
-        """
-        players = self.get_players()
-        print(players)
+        tournaments.load_tournaments_from_json(TOURNAMENTS_DATA_JSON)
+        return tournaments
 
     def display_tournaments(self):
         """
@@ -135,8 +149,14 @@ class Controller:
         print(tournaments)
 
     def display_a_tournament(self):
+        """
+        Method that displays a tournament.
+        """
         self.tournaments = self.get_all_tournaments()
         name = self.view.prompt_for_selecting_tournament(self.tournaments)
+        if name.lower() == "q":
+            return
+
         self.current_tournament = self.get_tournament(name)
 
         print(self.current_tournament)
@@ -144,6 +164,22 @@ class Controller:
         if self.current_tournament.is_completed():
             # Tournament completed
             self.display_completed_tournament()
+
+    def create_tournament_init(self):
+        """
+        Method that launch the creation of a new tournament and checks if enough players.
+        Returns:
+
+        """
+        players = self.main_controller.player_controller.get_players()
+        if len(players) >= 4:
+            self.create_tournament()
+        elif len(players) in [1, 2, 3]:
+            self.main_controller.player_controller.view.display_enough_players()
+            return
+        else:
+            self.main_controller.player_controller.view.display_no_players()
+            return
 
     def create_tournament(self):
         """
@@ -156,7 +192,7 @@ class Controller:
 
             self.tournaments = self.get_all_tournaments()
             if any(t.name == name for t in self.tournaments):
-                print("❌ The tournament's name already exists. Please choose another one.\n")
+                self.view.display_tournament_name_exists()
                 continue
             else:
                 break
@@ -181,21 +217,18 @@ class Controller:
         # Create round
         self.current_tournament.create_round(self.current_tournament.current_round)
 
-        print(self.current_tournament)
-
         # Saving to json
         if self.tournaments.tournament_exists(self.current_tournament):
-            print(Fore.YELLOW + "❌ Tournament already in the database !\n")
+            self.view.display_tournament_exists()
         else:
             self.tournaments.add_tournament(self.current_tournament)
             if self.tournaments.save_tournament_to_json(TOURNAMENTS_DATA_JSON):
-                print(Fore.YELLOW + f"✅ New tournament added to database !\n{self.current_tournament}")
+                self.view.display_tournament_added(self.current_tournament)
 
     def display_completed_tournament(self):
         """
-        Method that displays a completed tournament object and th winner of the tournament.
+        Method that displays a completed tournament object and the winner of the tournament.
         """
-        # Tournament completed
 
         scores, id_to_player = Tournament.compute_player_scores(self.current_tournament)
         if not scores:
@@ -206,30 +239,20 @@ class Controller:
         max_score = max(scores.values())
 
         # filter the players with this score
-        winner_ids = [pid for pid, sc in scores.items() if sc == max_score]
-        winners = [id_to_player[pid] for pid in winner_ids]
+        winner_ids = [player_id for player_id, score in scores.items() if score == max_score]
+        winners = [id_to_player[player_id] for player_id in winner_ids]
 
-        # Display the winner(s)
-        if len(winners) == 1:
-            # one winner
-            winner = winners[0]
-            print(
-                Style.BRIGHT + Fore.RED +
-                f"\n⮞ 🏆 The winner of {self.current_tournament.name} is "
-                f"{winner.identifier} : {winner.first_name} {winner.name.upper()} (score {max_score} point(s).\n")
-        else:
-            # several winners
-            print(
-                Style.BRIGHT + Fore.RED +
-                f"\n⮞ 🏆 The winners of {self.current_tournament.name} are :\n"
-            )
-            for w in winners:
-                print(
-                    Style.BRIGHT + Fore.RED +
-                    f"   - {w.identifier} : {w.first_name} {w.name.upper()} (tie at {max_score} point(s)).\n"
-                )
+        self.view.display_winners(winners, max_score, self.current_tournament.name)
 
     def tournament_exists(self, tournament_name):
+        """
+        Method that checks if a tournament exists.
+        Args:
+            tournament_name (str): The name of the tournament.
+
+        Returns:
+            Boolean: True if the tournament exists. False otherwise.
+        """
         for tournament in self.tournaments:
             if tournament.name == tournament_name:
                 return True
@@ -247,7 +270,7 @@ class Controller:
                 self.tournaments.add_tournament(self.current_tournament)
 
         if self.tournaments.save_tournament_to_json(TOURNAMENTS_DATA_JSON):
-            print(Fore.YELLOW + f"✅ Tournament updated in database !\n{self.current_tournament}")
+            self.view.display_tournament_updated(self.current_tournament)
 
     def update_tournament(self):
         """
@@ -261,7 +284,7 @@ class Controller:
                 running_tournaments.add_tournament(tournament)
 
         if len(running_tournaments) == 0:
-            print(Fore.RED + "⛔ All tournaments are completed. You can not add any score.\n")
+            self.view.display_all_tournaments_completed()
         else:
 
             while True:
@@ -275,43 +298,38 @@ class Controller:
                 if tournament.is_completed():
                     self.current_tournament = tournament
                     self.display_completed_tournament()
-                    print(Fore.RED + "Tournament already completed ! Please choose another one.\n")
+                    self.view.display_tournament_completed()
                     continue
                 break
 
             for tournament in self.tournaments:
                 if tournament.name == tournament_name:
                     self.current_tournament = tournament
-            print(Fore.YELLOW + f"\nSelected tournament: {tournament_name}.")
+            self.view.display_selected_tournament(tournament_name)
 
             if self.current_tournament.current_round < 4:
-                # set scores for current round
                 self.set_tournament_scores()
 
-                # Set end date/time for current round
                 self.current_tournament.rounds[self.current_tournament.current_round - 1].set_end_date()
 
-                # update current round
                 self.current_tournament.current_round += 1
 
-                # create next round and matches
                 self.current_tournament.create_round(self.current_tournament.current_round)
 
-                # Save
                 self.save_tournament(tournament_name)
 
             else:
-                # set scores for current round
                 self.set_tournament_scores()
 
-                # Set end date/time for current round
                 self.current_tournament.rounds[self.current_tournament.current_round - 1].set_end_date()
 
-                # Save
                 self.save_tournament(tournament_name)
 
-                # Tournament completed
                 self.display_completed_tournament()
+
+    @staticmethod
+    def increment_score(player_score, increment):
+        player_score += increment
 
     def set_tournament_scores(self):
         """
@@ -321,22 +339,127 @@ class Controller:
         rnd = tournament.rounds[tournament.current_round - 1]
         print(rnd)
         for match in rnd.matches:
-            p1, _, _ = match.match_tuple[0]
-            p2, _, _ = match.match_tuple[1]
+            player_1, _, _ = match.match_tuple[0]
+            player_2, _, _ = match.match_tuple[1]
 
-            score1 = self.view.prompt_for_adding_player_score(p1)
-            score2 = 0
-            match float(score1):
-                case 0:
-                    score2 += 1.0
-                case 0.5:
-                    score2 += 0.5
-                case 1.0:
-                    score2 += 0.0
+            score_1 = self.main_controller.player_controller.view.prompt_for_adding_player_score(player_1)
 
-            match.set_scores(p1, score1, p2, score2)
-        print(Fore.GREEN + f"\nScores saved for {rnd.round_name}.")
-        print(rnd)
+            # Dispatching table
+            actions = {
+                0: 1.0,
+                0.5: 0.5,
+                1.0: 0
+            }
+
+            score_2 = actions.get(float(score_1), 0)
+
+            match.set_scores(player_1, score_1, player_2, score_2)
+
+        self.view.display_tournament_round_score_saved(rnd.round_name)
+
+    def select_tournament_players(self, players_number):
+        """
+        Method that selects the tournaments players from all the players in database.
+        Args:
+            players_number (int): Number of players to select.
+
+        Returns:
+            Players object.
+        """
+        number = int(players_number)
+        current_number = 0
+        all_players = self.main_controller.player_controller.get_players()
+        selected_players = Players()
+
+        while current_number < number:
+            players_left = number - current_number
+            player_identifier = (self.main_controller.player_controller.view.
+                                 prompt_for_selecting_players(all_players, players_left, selected_players))
+            player = all_players.get_player_by_identifier(player_identifier)
+
+            if player is None:
+                self.view.display_player_not_found()
+                continue
+
+            if any(p.identifier == player.identifier for p in selected_players):
+                self.view.display_player_exists()
+                continue
+
+            selected_players.add_player(player)
+            current_number += 1
+            self.view.display_player_added(player, current_number, number)
+
+        return selected_players
+
+    def display_update_tournament_sub_menu(self):
+        """
+        Method that displays the "update a tournament" sub menu.
+        """
+        while True:
+            self.view.display_update_tournament_menu()
+            submenu = self.view.prompt_for_updating_tournament_menu()
+
+            # Dispatching table
+            actions = {
+                1: self.display_tournaments,
+                2: self.update_tournament,
+                3: None
+            }
+
+            action = actions.get(submenu)
+
+            if action is None:
+                break
+
+            action()
+
+
+class PlayerController:
+    def __init__(self):
+        self.view = PlayerView()
+
+    def players_menu(self):
+        """
+        Method that displays the "players" menu.
+        """
+        while True:
+            self.view.display_players_submenu()
+            menu = self.view.prompt_for_players_submenu()
+
+            # Dispatching table
+            actions = {
+                1: self.add_player_in_database,
+                2: self.display_players,
+                3: None
+            }
+
+            action = actions.get(menu)
+
+            if action is None:
+                break
+
+            action()
+
+    @staticmethod
+    def get_players():
+        """
+        Method that gets players object from the json file
+        Returns:
+            Players object.
+        """
+        print(Fore.YELLOW + "⮞ Getting players...\n")
+        players = Players()
+
+        # loads players datas from json
+        players.load_players_from_json(PLAYERS_DATA_JSON)
+        return players
+
+    def display_players(self):
+        """
+        Method that displays players object.
+        """
+        players = self.get_players()
+        print(players)
 
     def add_player_in_database(self):
         """
@@ -354,80 +477,52 @@ class Controller:
         players = self.get_players()
 
         if players.player_exists(player):
-            print(Fore.YELLOW + "❌ Identifier already assigned in database !\n")
+            self.view.display_player_exists()
         else:
             players.add_player(player)
             if players.save_players_to_json(PLAYERS_DATA_JSON):
-                print(Fore.YELLOW + f"✅ New player added to database !\n{player}")
+                self.view.display_player_added(player)
 
-    def select_tournament_players(self, players_number):
+
+class ReportController:
+    def __init__(self, main_controller):
+        self.main_controller = main_controller
+        self.view = ReportView()
+
+    def reports_menu(self):
         """
-        Method that selects the tournaments players from all the players in database.
-        Args:
-            players_number (int): Number of players to select.
-
-        Returns:
-            Players object.
+        Method that displays the "reports" menu.
         """
-        number = int(players_number)
-        current_number = 0
-        all_players = self.get_players()
-        selected_players = Players()
-
-        while current_number < number:
-            players_left = number - current_number
-            player_identifier = self.view.prompt_for_selecting_players(all_players, players_left, selected_players)
-            player = all_players.get_player_by_identifier(player_identifier)
-
-            if player is None:
-                print("❌ Player not found. Please try again.\n")
-                continue
-
-            if any(p.identifier == player.identifier for p in selected_players):
-                print("⚠️ Player already selected. Please choose another one.\n")
-                continue
-
-            selected_players.add_player(player)
-            current_number += 1
-            print(f"✅ {player} added to tournament. ({current_number}/{number}).\n")
-
-        return selected_players
-
-    def display_tournaments_sub_menu(self):
-        """
-        Method that displays the "update a tournament" sub menu.
-        """
-        while True:
-            self.view.display_update_tournament_menu()
-            submenu = self.view.prompt_for_updating_tournament_menu()
-
-            match submenu:
-                case 1:
-                    self.display_tournaments()
-                case 2:
-                    self.update_tournament()
-                case 3:
-                    break
-
-    def display_reports_sub_menu(self):
         while True:
             self.view.display_reports_menu()
             submenu = self.view.prompt_for_reports_menu()
 
-            match int(submenu):
-                case 1:
-                    self.display_report(1)
-                case 2:
-                    self.display_report(2)
-                case 3:
-                    self.display_report(3)
-                case 4:
-                    self.display_report(4)
-                case 5:
-                    break
+            # Dispatching table
+            actions = {
+                1: lambda: self.display_report(report=1),
+                2: lambda: self.display_report(report=2),
+                3: lambda: self.display_report(report=3),
+                4: lambda: self.display_report(report=4),
+                5: None
+            }
 
-    @staticmethod
-    def save_report(path, content):
+            action = actions.get(int(submenu))
+
+            if action is None:
+                break
+
+            action()
+
+    def save_report(self, path, content):
+        """
+        Method that saves the report with the given path.
+        Args:
+            path (Path): Path to save the report.
+            content (str): Content of the report.
+
+        Returns:
+            Boolean : True if the report was saved. False otherwise.
+        """
         try:
             output_path = Path(path)
             output_path.parent.mkdir(exist_ok=True)
@@ -436,138 +531,159 @@ class Controller:
                 return True
 
         except FileNotFoundError:
-            print(f"{path} : ❌ file not found !")
+            self.view.display_file_not_found(path)
             return False
 
     def display_report(self, report):
+        """
+        Method that displays the report according to the report number given.
+        Args:
+            report (int): Number of the report in the dispatch table.
+
+        Returns:
+            A tuple with the template path and the HTML content.
+        """
+        def report_alphabetically_players():
+            content = self.generate_report_alphabetically_players()
+            return ALPHABETICALLY_PLAYERS_REPORT, content
+
+        def report_tournaments():
+            content = self.generate_report_tournaments()
+            return ALL_TOURNAMENTS_REPORT, content
+
+        def report_current_tournament_players():
+            tournaments = self.main_controller.tournament_controller.get_all_tournaments()
+
+            tournament_name = (self.main_controller.tournament_controller.
+                               prompt_for_selecting_tournament(tournaments))
+            print(tournament_name)
+            current_tournament = Tournament("", "")
+
+            for tournament in tournaments:
+                if tournament.name == tournament_name:
+                    current_tournament = tournament
+
+            content = self.generate_report_current_tournament_players(current_tournament)
+
+            return CURRENT_TOURNAMENT_PLAYERS_REPORT, content
+
+        def report_current_tournament_rounds_and_matches():
+            tournaments = self.main_controller.tournament_controller.get_all_tournaments()
+
+            tournament_name = (self.main_controller.tournament_controller.view.
+                               prompt_for_selecting_tournament(tournaments))
+            print(tournament_name)
+            current_tournament = Tournament("", "")
+
+            for tournament in tournaments:
+                if tournament.name == tournament_name:
+                    current_tournament = tournament
+
+            content = self.generate_report_current_tournament_all_rounds_and_matches(current_tournament)
+
+            return CURRENT_TOURNAMENT_ROUNDS_AND_MATCHES_REPORT, content
+
+        # --- Dispatch Table ---
+        reports = {
+            1: report_alphabetically_players,
+            2: report_tournaments,
+            3: report_current_tournament_players,
+            4: report_current_tournament_rounds_and_matches
+        }
+
         while True:
-            answer = self.view.prompt_for_generating_report()
-            if answer == "y" or answer == "Y":
-                path = Path()
-                content = ""
-                match report:
-                    case 1:
-                        content = self.generate_report_alphabetically_players()
-                        path = ALPHABETICALLY_PLAYERS_REPORT
-
-                    case 2:
-                        content = self.generate_report_tournaments()
-                        path = ALL_TOURNAMENTS_REPORT
-
-                    case 3:
-                        # Get tournaments
-                        tournaments = self.get_all_tournaments()
-
-                        tournament_name = self.view.prompt_for_selecting_tournament(tournaments)
-                        print(tournament_name)
-                        current_tournament = Tournament("", "")
-
-                        for tournament in tournaments:
-                            if tournament.name == tournament_name:
-                                current_tournament = tournament
-
-                        content = self.generate_report_current_tournament_players(current_tournament)
-                        path = CURRENT_TOURNAMENT_PLAYERS_REPORT
-
-                    case 4:
-                        # Get tournaments
-                        tournaments = self.get_all_tournaments()
-
-                        tournament_name = self.view.prompt_for_selecting_tournament(tournaments)
-                        print(tournament_name)
-                        current_tournament = Tournament("", "")
-
-                        for tournament in tournaments:
-                            if tournament.name == tournament_name:
-                                current_tournament = tournament
-
-                        content = self.generate_report_current_tournament_all_rounds_and_matches(current_tournament)
-                        path = CURRENT_TOURNAMENT_ROUNDS_AND_MATCHES_REPORT
+            answer = self.view.prompt_for_generating_report().strip().lower()
+            if answer == "y":
+                if report not in reports:
+                    self.view.display_invalid_report_number()
+                    break
+                path, content = reports[report]()
 
                 self.save_report(path, content)
-                print("The HTML report has been generated.")
-                print(f"Here ⯈ {path}\n")
+                self.view.display_report_generated(path)
                 break
 
-            elif answer == "n" or answer == "N":
-                print("Ok, cancelled.")
+            elif answer == "n":
+                self.view.display_cancelled()
                 break
             else:
-                print(Fore.RED + "❌ You must answer yes or no (y/n).")
-                continue
+                self.view.display_yes_no()
 
     def generate_report_alphabetically_players(self):
-        env = Environment(loader=FileSystemLoader("."))
-        template = env.get_template(ALPHABETICALLY_PLAYERS_TEMPLATE_HTML)
+        """
+        Method that generates the report with the players alphabetically sorted.
+        Returns:
+            HTML content of the report.
+        """
+        template = self.main_controller.templates["players"]
 
-        # Get players
-        players = self.get_players()
+        players = self.main_controller.player_controller.get_players()
 
-        # Sort players alphabetically
         sorted_players = sorted(players, key=lambda p: p.name)
 
-        # Display
-        print(f"{len(sorted_players)} players alphabetically sorted.\n")
-        print(f"{Players(sorted_players)}\n")
+        self.view.display_sorted_players(len(sorted_players), Players(sorted_players))
 
-        # Generate HTML report content
         html = template.render(players=sorted_players)
 
         return html
 
     def generate_report_tournaments(self):
-        # Get tournaments
-        tournaments = self.get_all_tournaments()
+        """
+        Method that generates the report with the tournaments sorted.
+        Returns:
+            HTML content of the report.
+        """
+        tournaments = self.main_controller.tournament_controller.get_all_tournaments()
 
-        # Sort tournaments alphabetically
         sorted_tournaments = sorted(tournaments, key=lambda t: t.name)
 
-        env = Environment(loader=FileSystemLoader("."))
-        template = env.get_template(TOURNAMENTS_TEMPLATE_HTML)
+        template = template = self.main_controller.templates["all_tournaments"]
 
-        # Display
-        print(f"{Tournaments(sorted_tournaments)}\n")
+        self.view.display_sorted_tournaments(Tournaments(sorted_tournaments))
 
-        # Generate HTML report content
         html = template.render(tournaments=sorted_tournaments)
 
         return html
 
-    @staticmethod
-    def generate_report_current_tournament_players(tournament):
-        env = Environment(loader=FileSystemLoader("."))
-        template = env.get_template(CURRENT_TOURNAMENT_PLAYERS_TEMPLATE_HTML)
+    def generate_report_current_tournament_players(self, tournament):
+        """
+        Method that generates the report with the current tournament players sorted.
+        Args:
+            tournament (Tournament): Tournament object.
 
-        # Display
-        print(f"\nThe players of selected tournament \"{tournament.name}\":\n")
+        Returns:
+            HTML content of the report.
+        """
+        template = self.main_controller.templates["current_tournament"]
+
+        self.view.display_selected_tournament_title(tournament.name)
         for player in tournament.players:
-            print(f"{player}")
+            self.view.display_player(player)
 
         sorted_players = sorted(tournament.players, key=lambda p: p.name)
         tournament.players = sorted_players
-        # Generate HTML report content
+
         html = template.render(tournament=tournament)
 
         return html
 
-    @staticmethod
-    def generate_report_current_tournament_all_rounds_and_matches(tournament):
-        env = Environment(loader=FileSystemLoader("."))
-        template = env.get_template(CURRENT_TOURNAMENT_ROUNDS_MATCHES_TEMPLATE_HTML)
+    def generate_report_current_tournament_all_rounds_and_matches(self, tournament):
+        """
+        Method that generates the report with all rounds and matches of the given tournament.
+        Args:
+            tournament (Tournament): Tournament object.
+
+        Returns:
+            HTML content of the report.
+        """
+        template = self.main_controller.templates["tournament_all_rounds_and_matches"]
 
         # Display
-        print(f"\nAll the rounds and matches of selected tournament \"{tournament.name}\":\n")
+        self.view.display_selected_tournament_title(tournament.name)
         for rnd in tournament.rounds:
-            print(rnd)
+            self.view.display_rnd(rnd)
 
         # Generate HTML report content
         html = template.render(tournament=tournament)
 
         return html
-
-
-if __name__ == "__main__":
-
-    view = View()
-    controller = Controller(view)
-    controller.run()
