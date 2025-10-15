@@ -2,6 +2,7 @@
 import json
 import random
 import string
+import sys
 from collections import UserList, defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -9,9 +10,20 @@ from pathlib import Path
 import faker
 # Third-party imports
 from colorama import Fore, Style, init
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
 
 # Initialize Colorama
 init(autoreset=True)
+
+# Initialize Console
+console = Console(
+    file=sys.stdout,
+    force_terminal=True,
+    color_system="truecolor",  # active la palette complète
+    width=200
+)
 
 fake = faker.Faker()
 NUMBER_OF_ROUNDS = 4
@@ -29,6 +41,47 @@ class Match:
 
     def __iter__(self):
         return iter(self.match_tuple)
+
+    def __rich_console__(self, console, *args, **kwargs):
+        player_1, score_1, color_1 = self.match_tuple[0]
+        player_2, score_2, color_2 = self.match_tuple[1]
+
+        score_1_display = str(score_1) if score_1 is not None else 0
+        score_2_display = str(score_2) if score_2 is not None else 0
+
+        prefix = "[bold bright_white]┝╍ [/bold bright_white]"
+        color_1_ = f"[bright_white]{color_1.upper()}[/bright_white]"
+        color_2_ = f"[bright_white]{color_2.upper()}[/bright_white]"
+        sep = " color : "
+        score = " score : "
+
+        table_1 = Table(show_header=False, border_style="black")
+        table_1.add_column("Prefix", justify="center")
+        table_1.add_column("Player", justify="center")
+        table_1.add_column("Color 1", justify="center")
+        table_1.add_column("Score Text", justify="center")
+        table_1.add_column("Score 1", justify="center")
+
+        table_1.add_row(prefix, player_1.__rich_console__(console), sep, color_1_, score, score_1_display)
+
+        vs = "[bold yellow]VS[/bold yellow]"
+        table_0 = Table(show_header=False, border_style="black")
+        table_0.add_column("VS", justify="center")
+        table_0.add_row(vs)
+
+        table_2 = Table(show_header=False, border_style="black")
+        table_2.add_column("Prefix", justify="center")
+        table_2.add_column("Player", justify="center")
+        table_2.add_column("Color 1", justify="center")
+        table_2.add_column("Score Text", justify="center")
+        table_2.add_column("Score 1", justify="center")
+
+        table_2.add_row(prefix, player_2.__rich_console__(console), sep, color_2_, score, score_2_display)
+
+        yield table_1
+        yield table_0
+        yield table_2
+        yield "\n"
 
     def __str__(self):
         player_1, score_1, color_1 = self.match_tuple[0]
@@ -105,6 +158,13 @@ class Player:
         self.birth_date = birth_date
         self.identifier = identifier
 
+    def __rich_console__(self, console, *args, **kwargs):
+        str_id = f"[bold red]{self.identifier}[/bold red]"
+        sep = "[grey53] - [/grey53]"
+        str_name = f"[bold blue]{self.first_name} {self.name.upper()} [/bold blue]"
+        str_date = f"[grey53]born on {self.birth_date}[/grey53]"
+        return str_id + sep + str_name + str_date
+
     def __str__(self):
         str_id = Fore.RED + Style.DIM + f"{self.identifier}"
         sep = Fore.WHITE + Style.NORMAL + " - "
@@ -150,6 +210,19 @@ class Players(UserList):
     def __init__(self, players=None):
         super().__init__(players or [])
 
+    def __rich_console__(self, console, *args, **kwargs):
+        header = Panel("ALL PLAYERS", border_style="bright_red", style="bright_red", expand=False)
+        yield header
+
+        table = Table(show_header=False, header_style="bright_red", border_style="bright_red")
+
+        table.add_column("Identifier", justify="left", style="bold red")
+
+        for player in self:
+            table.add_row(player.__rich_console__(console))
+
+        yield table
+
     def __str__(self, indent=0):
         prefix = " " * indent
         players_str = ""
@@ -180,7 +253,12 @@ class Players(UserList):
         Returns:
             bool: True if the player identifier exists in the list of players.
         """
-        return any(p.identifier == player.identifier for p in self.data)
+        if any(p.identifier == player.identifier for p in self.data):
+            return 1
+        elif (any(p.name.lower() == player.name.lower() for p in self.data) and
+              any(p.first_name.lower() == player.first_name.lower() for p in self.data)):
+            return 2
+        return 3
 
     def shuffle(self):
         """
@@ -262,9 +340,9 @@ class Players(UserList):
                 return True
 
         except FileNotFoundError:
-            print(f"{file_path} : ❌ file not found !\n")
+            console.print(f"[bright_white]{file_path} : [/bright_white][bright_red]❌ file not found ![/bright_red]\n")
             self.save_players_to_json(PLAYERS_DATA_JSON)
-            print(Fore.GREEN + "File Created !\n")
+            console.print("[bright_green]File Created ![/bright_green]\n")
 
     def save_players_to_json(self, file_path):
         """
@@ -281,7 +359,7 @@ class Players(UserList):
                 return True
 
         except FileNotFoundError:
-            print(f"{file_path} : ❌ file not found !")
+            console.print(f"[bright_white]{file_path} : [/bright_white][bright_red]❌ file not found ![/bright_red]\n")
             return False
 
     def get_player_by_identifier(self, identifier: str):
@@ -305,6 +383,35 @@ class Round:
         self.start_time = None
         self.end_date = None
         self.end_time = None
+
+    def __rich_console__(self, console, *args, **kwargs):
+        start = f"[dim grey58]{self.start_date} {self.start_time}[/dim grey58]" \
+            if self.start_date and self.start_time else "Not started"
+        end = f"[dim grey58]{self.end_date} {self.end_time}[/dim grey58]" \
+            if self.end_date and self.end_time else "Not finished"
+
+        prefix_dates = "[dim grey58] (from [/dim grey58]"
+        sep = "[dim grey58] → [/dim grey58]"
+        suffix_dates = "[dim grey58])[/dim grey58]"
+        round_name = f"[bold bright_white]{self.round_name}[/bold bright_white]"
+
+        round_str = round_name + prefix_dates + f"{start}" + sep + f"{end}" + suffix_dates
+
+        if not self.matches:
+            yield f"- The {self.round_name} has no matches yet."
+
+        prefix = "[bold bright_white]- The [/bold bright_white]"
+        middle = "[bold bright_white] has [/bold bright_white]"
+        suffix = "[bold bright_white] matches:\n\n[/bold bright_white]"
+
+        table_0 = Table(show_header=False, border_style="black")
+        table_0.add_column("Header", justify="left")
+        table_0.add_row(prefix + round_str + middle +
+                        f"[bold bright_white]{len(self.matches)}[/bold bright_white]"
+                        + suffix)
+        for match in self.matches:
+            table_0.add_row(match)
+        yield table_0
 
     def __str__(self):
         start = Fore.WHITE + Style.DIM + f"{self.start_date} {self.start_time}" \
@@ -405,6 +512,23 @@ class Tournament:
             self.players = players
         else:
             self.players = Players(players)
+
+    def __rich_console__(self, console, *args, **kwargs):
+        rounds_str = ""
+
+        name = f"[bold cyan]{self.name.upper()} [/bold cyan]"
+        place_dates = (f"[white]({self.place}, {self.start_date} → {self.end_date}, "
+                       f"currently in round {self.current_round} of {self.rounds_number} "
+                       f"rounds, description : {self.description})[/white]")
+
+        yield Panel(f"[cyan]├─   [/cyan] {name}" + f"{place_dates}", expand=False, border_style="cyan")
+
+        if self.rounds:
+            rounds_str = Panel("[bright_white]ALL ROUNDS[/bright_white]", expand=False)
+            yield rounds_str
+
+            for rnd in self.rounds:
+                yield rnd
 
     def __str__(self):
         rounds_str = ""
@@ -622,6 +746,16 @@ class Tournament:
 class Tournaments(UserList):
     def __init__(self, tournaments=None):
         super().__init__(tournaments or [])
+
+    def __rich_console__(self, console, *args, **kwargs):
+        title = Panel("[bold turquoise2]ALL TOURNAMENTS[/bold turquoise2]", border_style="bold turquoise2",
+                      expand=True)
+        yield title
+        table = Table(show_header=False, border_style="bold turquoise2")
+        table.add_column("Tournament")
+        for tournament in self:
+            table.add_row(tournament)
+        yield table
 
     def __str__(self):
         tournaments_str = ""

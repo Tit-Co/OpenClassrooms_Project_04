@@ -1,13 +1,18 @@
+import sys
 from pathlib import Path
 
-from colorama import Fore, init
 from jinja2 import Environment, FileSystemLoader
+from rich.console import Console
 
 from .models import Player, Players, Tournament, Tournaments
 from .views import MainView, PlayerView, ReportView, TournamentView
 
-init(autoreset=True)
-
+console = Console(
+    file=sys.stdout,
+    force_terminal=True,
+    color_system="truecolor",  # active la palette complète
+    width=200
+)
 
 # Base paths
 TOURNAMENT_FOLDER = Path("./data/tournaments/")
@@ -134,19 +139,11 @@ class TournamentController:
         Returns:
             Tournaments object.
         """
-        print(Fore.YELLOW + "⮞ Getting tournaments...\n")
         tournaments = Tournaments()
 
         # loads tournaments datas from json
         tournaments.load_tournaments_from_json(TOURNAMENTS_DATA_JSON)
         return tournaments
-
-    def display_tournaments(self):
-        """
-        Method that displays tournaments object.
-        """
-        tournaments = self.get_all_tournaments()
-        print(tournaments)
 
     def display_a_tournament(self):
         """
@@ -159,11 +156,15 @@ class TournamentController:
 
         self.current_tournament = self.get_tournament(name)
 
-        print(self.current_tournament)
+        self.view.display_tournament(self.current_tournament)
 
         if self.current_tournament.is_completed():
             # Tournament completed
             self.display_completed_tournament()
+
+    def display_tournaments(self):
+        tournaments = self.get_all_tournaments()
+        self.view.display_tournaments(tournaments)
 
     def create_tournament_init(self):
         """
@@ -232,7 +233,7 @@ class TournamentController:
 
         scores, id_to_player = Tournament.compute_player_scores(self.current_tournament)
         if not scores:
-            print("No players/scores found.")
+            self.view.display_no_scores_found()
             return
 
         # find max score
@@ -337,7 +338,8 @@ class TournamentController:
         """
         tournament = self.current_tournament
         rnd = tournament.rounds[tournament.current_round - 1]
-        print(rnd)
+        self.view.display_round(rnd)
+
         for match in rnd.matches:
             player_1, _, _ = match.match_tuple[0]
             player_2, _, _ = match.match_tuple[1]
@@ -447,7 +449,6 @@ class PlayerController:
         Returns:
             Players object.
         """
-        print(Fore.YELLOW + "⮞ Getting players...\n")
         players = Players()
 
         # loads players datas from json
@@ -459,7 +460,7 @@ class PlayerController:
         Method that displays players object.
         """
         players = self.get_players()
-        print(players)
+        self.view.display_players(players)
 
     def add_player_in_database(self):
         """
@@ -473,12 +474,14 @@ class PlayerController:
         first_name = self.view.prompt_for_player_first_name()
         birth_date = self.view.prompt_for_player_birth_date()
         identifier = self.view.prompt_for_player_identifier()
-        player = Player(name, first_name, birth_date, identifier)
+        player = Player(name.upper(), first_name.capitalize(), birth_date, identifier)
         players = self.get_players()
 
-        if players.player_exists(player):
+        if players.player_exists(player) == 1:
+            self.view.display_player_identifier_exists()
+        elif players.player_exists(player) == 2:
             self.view.display_player_exists()
-        else:
+        elif players.player_exists(player) == 3:
             players.add_player(player)
             if players.save_players_to_json(PLAYERS_DATA_JSON):
                 self.view.display_player_added(player)
@@ -556,7 +559,8 @@ class ReportController:
 
             tournament_name = (self.main_controller.tournament_controller.
                                prompt_for_selecting_tournament(tournaments))
-            print(tournament_name)
+            self.main_controller.view.display_tournament_name(tournament_name)
+
             current_tournament = Tournament("", "")
 
             for tournament in tournaments:
@@ -572,7 +576,8 @@ class ReportController:
 
             tournament_name = (self.main_controller.tournament_controller.view.
                                prompt_for_selecting_tournament(tournaments))
-            print(tournament_name)
+            self.main_controller.view.display_tournament_name(tournament_name)
+
             current_tournament = Tournament("", "")
 
             for tournament in tournaments:
