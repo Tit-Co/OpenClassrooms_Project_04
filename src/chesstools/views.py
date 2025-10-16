@@ -4,6 +4,8 @@ from datetime import datetime
 from rich.console import Console
 from rich.prompt import Prompt
 
+from src.chesstools.models import Tournaments, Player, Players, Round
+
 console = Console(
     file=sys.stdout,
     force_terminal=True,
@@ -24,7 +26,7 @@ MESSAGE = {"alpha": "[bold bright_red]❌[/bold bright_red] [bright_red]Must be 
 class MainView:
 
     @staticmethod
-    def display_main_menu():
+    def display_main_menu() -> None:
         """
         Method that displays the main menu screen.
         """
@@ -36,7 +38,7 @@ class MainView:
         console.print("[bright_blue]▷▷ 4. Quit the app[/bright_blue]\n")
 
     @staticmethod
-    def prompt_for_main_menu():
+    def prompt_for_main_menu() -> int:
         """
         Method that prompts the user to choose an option in the main menu screen.
         Returns:
@@ -59,13 +61,13 @@ class MainView:
             return int(answer)
 
     @staticmethod
-    def display_goodbye():
+    def display_goodbye() -> None:
         console.print("[bold bright_red]👋 Goodbye ! 👋[/bold bright_red]")
 
 
 class TournamentView:
     @staticmethod
-    def display_tournaments_submenu():
+    def display_tournaments_submenu() -> None:
         console.print("[bold bright_blue]\n▶ TOURNAMENTS ◀\n[/bold bright_blue]")
         console.print("[bright_blue]▷▷ 1. Create a tournament[/bright_blue]")
         console.print("[bright_blue]▷▷ 2. Update a tournament[/bright_blue]")
@@ -74,7 +76,7 @@ class TournamentView:
         console.print("[bright_blue]▷▷ 5. Go back to main menu\n[/bright_blue]")
 
     @staticmethod
-    def display_update_tournament_menu():
+    def display_update_tournament_menu() -> None:
         """
         Method that displays the tournament submenu.
         """
@@ -84,7 +86,7 @@ class TournamentView:
         console.print("[bright_blue]▷▷ 3. Go back to main menu\n[/bright_blue]")
 
     @staticmethod
-    def prompt_for_tournaments_submenu():
+    def prompt_for_tournaments_submenu() -> int:
         """
         Method that prompts the user to choose an option in the main menu screen.
         Returns:
@@ -107,7 +109,7 @@ class TournamentView:
             return int(answer)
 
     @staticmethod
-    def prompt_for_updating_tournament_menu():
+    def prompt_for_updating_tournament_menu() -> int:
         """
         Method that prompts the user to choose an option in the tournament's update submenu screen.
         Returns:
@@ -132,7 +134,7 @@ class TournamentView:
             return int(answer)
 
     @staticmethod
-    def prompt_for_updating_tournament_scores_menu():
+    def prompt_for_updating_tournament_scores_menu() -> int:
         """
         Method that prompts the user to choose an option in the tournament's scores submenu screen.
         Returns:
@@ -155,7 +157,7 @@ class TournamentView:
             return int(answer)
 
     @staticmethod
-    def prompt_for_tournament_name():
+    def prompt_for_tournament_name() -> str:
         """
         Method that prompts the user to choose the tournament name.
         Returns:
@@ -173,7 +175,7 @@ class TournamentView:
             return tournament_name
 
     @staticmethod
-    def prompt_for_tournament_place():
+    def prompt_for_tournament_place() -> str:
         """
         Method that prompts the user to choose the tournament place.
         Returns:
@@ -187,7 +189,7 @@ class TournamentView:
             return tournament_place
 
     @staticmethod
-    def prompt_for_tournament_start_date():
+    def prompt_for_tournament_start_date() -> str:
         """
         Method that prompts the user to choose the tournament start date.
         Returns:
@@ -222,7 +224,7 @@ class TournamentView:
                               "[/bright_red]")
 
     @staticmethod
-    def prompt_for_tournament_end_date():
+    def prompt_for_tournament_end_date() -> str:
         """
         Method that prompts the user to choose the tournament end date.
         Returns:
@@ -242,7 +244,7 @@ class TournamentView:
                 console.print(MESSAGE["invalid_date"])
 
     @staticmethod
-    def prompt_for_tournament_description():
+    def prompt_for_tournament_description() -> str:
         """
         Method that prompts the user to choose the tournament description.
         Returns:
@@ -257,7 +259,7 @@ class TournamentView:
             return tournament_description
 
     @staticmethod
-    def prompt_for_tournament_players_number():
+    def prompt_for_tournament_players_number() -> str:
         """
         Method that prompts the user to choose the tournament players number.
         Returns:
@@ -279,7 +281,7 @@ class TournamentView:
             return players_number
 
     @staticmethod
-    def tournament_exists(name, tournaments):
+    def tournament_exists(name: str, tournaments: Tournaments) -> bool:
         """
         Method that checks if a tournament, identified by his name, exists in a tournaments object.
         Args:
@@ -294,7 +296,7 @@ class TournamentView:
                 return True
         return False
 
-    def prompt_for_selecting_tournament(self, tournaments):
+    def prompt_for_selecting_tournament(self, tournaments: Tournaments) -> str | None:
         """
         Method that prompts the user to choose the tournament.
         Args:
@@ -322,83 +324,83 @@ class TournamentView:
             return name
 
     @staticmethod
-    def display_tournament_name(tournament_name):
+    def display_tournament_name(tournament_name) -> None:
         console.print(tournament_name)
 
     @staticmethod
-    def display_tournament(tournament):
+    def display_tournament(tournament) -> None:
         """
         Method that displays tournament object.
         """
         console.print(tournament)
 
     @staticmethod
-    def display_round(rnd):
+    def display_round(rnd) -> None:
         console.print(rnd)
 
     @staticmethod
-    def display_tournaments(tournaments):
+    def display_tournaments(tournaments) -> None:
         """
         Method that displays tournaments object.
         """
         console.print(tournaments)
 
     @staticmethod
-    def display_tournament_name_exists():
+    def display_tournament_name_exists() -> None:
         console.print("[bold bright_red]❌[/bold bright_red] [bright_red]The tournament's name already exists. "
                       "Please choose another one.\n[/bright_red]")
 
     @staticmethod
-    def display_tournament_exists():
+    def display_tournament_exists() -> None:
         console.print("[bold bright_red]❌[/bold bright_red] [bright_red]Tournament already in the database !\n"
                       "[/bright_red]")
 
     @staticmethod
-    def display_tournament_added(current_tournament):
+    def display_tournament_added(current_tournament: str) -> None:
         console.print("[bright_yellow]✅ New tournament added to database ![/bright_yellow]")
         console.print(current_tournament)
 
     @staticmethod
-    def display_tournament_updated(current_tournament):
+    def display_tournament_updated(current_tournament: str) -> None:
         console.print("[bright_yellow]✅ Tournament updated in database ![/bright_yellow]")
         console.print(current_tournament)
 
     @staticmethod
-    def display_all_tournaments_completed():
+    def display_all_tournaments_completed() -> None:
         console.print("[bright_red]⛔ All tournaments are completed. You can not add any score.\n[/bright_red]")
 
     @staticmethod
-    def display_tournament_completed():
+    def display_tournament_completed() -> None:
         console.print("[bright_red]Tournament already completed ! Please choose another one.\n[/bright_red]")
 
     @staticmethod
-    def display_selected_tournament(tournament_name):
+    def display_selected_tournament(tournament_name: str) -> None:
         console.print(f"[bright_yellow]\nSelected tournament: [/bright_yellow]{tournament_name}.")
 
     @staticmethod
-    def display_tournament_round_score_saved(round_name):
+    def display_tournament_round_score_saved(round_name: int) -> None:
         console.print(f"[bright_green]\nScores saved for[/bright_green] {round_name}.")
 
     @staticmethod
-    def display_player_not_found():
+    def display_player_not_found() -> None:
         console.print("[bold bright_red]❌[/bold bright_red] [bright_red]Player not found. Please try again.\n"
                       "[/bright_red]")
 
     @staticmethod
-    def display_player_exists():
+    def display_player_exists() -> None:
         console.print("[bright_white]⚠️ Player already selected. Please choose another one.[/bright_white]\n")
 
     @staticmethod
-    def display_player_added(player, current_number, number):
+    def display_player_added(player: Player, current_number: int, number: int) -> None:
         console.print(f"{player.__rich_console__(console)}\n✅ [bright_yellow]added to tournament. "
                       f"({current_number}/{number}).\n[/bright_yellow]")
 
     @staticmethod
-    def display_no_scores_found():
+    def display_no_scores_found() -> None:
         console.print("[bold bright_red]❌[/bold bright_red] [bright_red]No players/scores found.[/bright_red]")
 
     @staticmethod
-    def display_winners(winners, max_score, tournament_name):
+    def display_winners(winners: list[Player], max_score: float, tournament_name: str) -> None:
         points = "point" if max_score <= 1 else "points"
         # Display the winner(s)
         if len(winners) == 1:
@@ -423,21 +425,21 @@ class TournamentView:
 class PlayerView:
 
     @staticmethod
-    def display_players_submenu():
+    def display_players_submenu() -> None:
         console.print("[bold bright_blue]\n▶ PLAYERS ◀\n[/bold bright_blue]")
         console.print("[bright_blue]▷▷ 1. Add a player into database[/bright_blue]")
         console.print("[bright_blue]▷▷ 2. Display the club players[/bright_blue]")
         console.print("[bright_blue]▷▷ 3. Go back to main menu\n[/bright_blue]")
 
     @staticmethod
-    def display_enough_players():
+    def display_enough_players() -> None:
         """
         Method that displays a 'not enough players' message.
         """
         console.print("\n[bright_red]There is not enough players to create a tournament.[/bright_red]\n")
 
     @staticmethod
-    def display_no_players():
+    def display_no_players() -> None:
         """
         Method that displays a 'no players' message.
         """
@@ -445,7 +447,7 @@ class PlayerView:
                       "[/bright_red]\n")
 
     @staticmethod
-    def prompt_for_players_submenu():
+    def prompt_for_players_submenu() -> int | None:
         """
         Method that prompts the user to choose an option in the players submenu screen.
         Returns:
@@ -468,7 +470,7 @@ class PlayerView:
             return int(answer)
 
     @staticmethod
-    def prompt_for_player_name():
+    def prompt_for_player_name() -> str | None:
         """
         Method that prompts the user to choose the player name.
         Returns:
@@ -482,7 +484,7 @@ class PlayerView:
             return name
 
     @staticmethod
-    def prompt_for_player_first_name():
+    def prompt_for_player_first_name() -> str | None:
         """
         Method that prompts the user to choose the player first name.
         Returns:
@@ -496,7 +498,7 @@ class PlayerView:
             return first_name
 
     @staticmethod
-    def prompt_for_player_birth_date():
+    def prompt_for_player_birth_date() -> str | None:
         """
         Method that prompts the user to choose the birthdate.
         Returns:
@@ -515,7 +517,7 @@ class PlayerView:
                 console.print(MESSAGE["invalid_date"])
 
     @staticmethod
-    def prompt_for_player_identifier():
+    def prompt_for_player_identifier() -> str | None:
         """
         Method that prompts the user to choose the player identifier.
         Returns:
@@ -545,11 +547,11 @@ class PlayerView:
                               "Must be like: AB12345 [/bright_red]")
 
     @staticmethod
-    def display_players(players):
+    def display_players(players: Players) -> None:
         console.print(players)
 
     @staticmethod
-    def player_exists(identifier, players):
+    def player_exists(identifier: str, players: Players) -> bool:
         """
         Method that checks if a player, identified by his identifier, exists in a players object.
         Args:
@@ -564,7 +566,7 @@ class PlayerView:
                 return True
         return False
 
-    def prompt_for_selecting_players(self, all_players, numbers_left, selected_players):
+    def prompt_for_selecting_players(self, all_players: Players, numbers_left: int, selected_players: Players) -> None:
         """
         Method that prompts the user to choose the players.
         Args:
@@ -610,7 +612,7 @@ class PlayerView:
         except ValueError:
             return False
 
-    def prompt_for_adding_player_score(self, player):
+    def prompt_for_adding_player_score(self, player: Player) -> float | None:
         """
         Method that prompts the user to add the player score.
         Args:
@@ -634,17 +636,17 @@ class PlayerView:
             return float(score)
 
     @staticmethod
-    def display_player_identifier_exists():
+    def display_player_identifier_exists() -> None:
         console.print("[bold bright_red]❌[/bold bright_red] [bright_red]This identifier already assigned in database "
                       "![/bright_red]\n")
 
     @staticmethod
-    def display_player_exists():
+    def display_player_exists() -> None:
         console.print("[bold bright_red]❌[/bold bright_red] [bright_red]This player already exists in database !"
                       "[/bright_red]\n")
 
     @staticmethod
-    def display_player_added(player):
+    def display_player_added(player: Players) -> None:
         console.print(f"[bright_green]✅ New player added to database ![/bright_green]\n"
                       f"{player.__rich_console__(console)}")
 
@@ -652,7 +654,7 @@ class PlayerView:
 class ReportView:
 
     @staticmethod
-    def display_reports_menu():
+    def display_reports_menu() -> None:
         """
         Method that displays the reports menu screen.
         """
@@ -664,7 +666,7 @@ class ReportView:
         console.print("[bright_blue]▷▷ 5. Go back to main menu\n[/bright_blue]")
 
     @staticmethod
-    def prompt_for_reports_menu():
+    def prompt_for_reports_menu() -> int | None:
         """
         Method that prompts the user to choose an option in the reports' menu screen.
         Returns:
@@ -687,7 +689,7 @@ class ReportView:
             return int(answer)
 
     @staticmethod
-    def prompt_for_generating_report():
+    def prompt_for_generating_report() -> str:
         """
         Method that prompts the user to choose to generate a report.
         Returns:
@@ -697,48 +699,48 @@ class ReportView:
         return answer
 
     @staticmethod
-    def display_file_not_found(path):
+    def display_file_not_found(path: str) -> None:
         console.print(f"{path} : [bold bright_red]❌[/bold bright_red] [bright_red]file not found ![/bright_red]")
 
     @staticmethod
-    def display_report_generated(path):
+    def display_report_generated(path: str) -> None:
         console.print(f"[bright_white]The HTML report has been generated.\nHere ⯈[/bright_white] {path}\n")
 
     @staticmethod
-    def display_cancelled():
+    def display_cancelled() -> None:
         console.print("[bright_white]Ok, cancelled.[/bright_white]")
 
     @staticmethod
-    def display_yes_no():
+    def display_yes_no() -> None:
         console.print("[bold bright_red]❌[/bold bright_red] [bright_red]You must answer yes or no (y/n)."
                       "[/bright_red]")
 
     @staticmethod
-    def display_sorted_players(number, players):
+    def display_sorted_players(number: int, players: Players) -> None:
         console.print(f"{number} [bright_white]players alphabetically sorted.[/bright_white]\n")
         console.print(f"{players}\n")
 
     @staticmethod
-    def display_sorted_tournaments(tournaments):
+    def display_sorted_tournaments(tournaments: Tournaments) -> None:
         console.print(f"{tournaments}\n")
 
     @staticmethod
-    def display_selected_tournament_title(tournament_name):
+    def display_selected_tournament_title(tournament_name: str) -> None:
         console.print(f"\n[bright_white]The players of selected tournament[/bright_white] \"{tournament_name}\":\n")
 
     @staticmethod
-    def display_player(player):
+    def display_player(player: Players) -> None:
         console.print(player)
 
     @staticmethod
-    def display_rnd(rnd):
+    def display_rnd(rnd: Round) -> None:
         console.print(rnd)
 
     @staticmethod
-    def display_all_rounds_and_matches_title(tournament_name):
+    def display_all_rounds_and_matches_title(tournament_name: str) -> None:
         console.print(f"\n[bright_white]All the rounds and matches of selected tournament[/bright_white] "
                       f"\"{tournament_name}\":\n")
 
     @staticmethod
-    def display_invalid_report_number():
+    def display_invalid_report_number() -> None:
         console.print("[bold bright_red]❌[/bold bright_red] [bright_red]Invalid report number.[/bright_red]")

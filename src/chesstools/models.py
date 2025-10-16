@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Standard library imports
 import json
 import random
@@ -6,6 +8,7 @@ import sys
 from collections import UserList, defaultdict
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import faker
 # Third-party imports
@@ -13,6 +16,7 @@ from colorama import Fore, Style, init
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+
 
 # Initialize Colorama
 init(autoreset=True)
@@ -33,11 +37,22 @@ PLAYERS_DATA_JSON = TOURNAMENT_FOLDER / Path("./players.json")
 
 
 class Match:
-    def __init__(self, player_1, player_2, score_1=0, score_2=0):
+    def __init__(
+        self,
+        player_1: Player,
+        player_2: Player,
+        score_1: float = 0.0,
+        score_2: float = 0.0,
+    ):
+        match_1 = (player_1, score_1, "⚪")
+        match_2 = (player_2, score_2, "⚫")
         if random.choice([True, False]):
-            self.match_tuple = ([player_1, score_1, "⚪"], [player_2, score_2, "⚫"])
+            self.match_tuple: tuple[tuple[Player, float, str], tuple[Player, float, str]] = (
+                match_1,
+                match_2,
+            )
         else:
-            self.match_tuple = ([player_2, score_2, "⚪"], [player_1, score_1, "⚫"])
+            self.match_tuple = (match_2, match_1)
 
     def __iter__(self):
         return iter(self.match_tuple)
@@ -105,36 +120,47 @@ class Match:
     def __repr__(self):
         return str(self.match_tuple)
 
-    def set_scores(self, player_1, score_1, player_2, score_2):
+    def set_scores(self, player_1: Player, score_1: float, player_2: Player, score_2: float) -> None:
         """
         Method that sets the scores of the match.
         Args:
-            p1 (player): The player 1 associated to score 1.
-            score1 (float): The score 1.
-            p2 (player): The player 2 associated to score 2.
-            score2 (float): The score 2.
+            player_1 (Player): The player 1 associated to score 1.
+            score_1 (float): The score 1.
+            player_2 (Player): The player 2 associated to score 2.
+            score_2 (float): The score 2.
         """
-        if self.match_tuple[0][0] == player_1:
-            self.match_tuple[0][1] = score_1
-            self.match_tuple[1][1] = score_2
-        elif self.match_tuple[0][0] == player_2:
 
-            self.match_tuple[0][1] = score_2
-            self.match_tuple[1][1] = score_1
+        p1, s1, c1 = self.match_tuple[0]
+        p2, s2, c2 = self.match_tuple[1]
+
+        if p1 == player_1:
+            self.match_tuple = (
+                (p1, score_1, c1),
+                (p2, score_2, c2),
+            )
+        elif p1 == player_2:
+            self.match_tuple = (
+                (p1, score_2, c1),
+                (p2, score_1, c2),
+            )
         else:
             print("Scores bug !")
 
-    def set_colors(self, color_1, color_2):
+    def set_colors(self, color_1: str, color_2: str) -> None:
         """
         Method that sets the players color in the match.
         Args:
-            color1 (float): The color 1.
-            color2 (float): The color 2.
+            color_1 (str): The color 1.
+            color_2 (str): The color 2.
         """
-        self.match_tuple[0][2] = color_1
-        self.match_tuple[1][2] = color_2
+        p1, s1, _ = self.match_tuple[0]
+        p2, s2, _ = self.match_tuple[1]
+        self.match_tuple = (
+            (p1, s1, color_1),
+            (p2, s2, color_2),
+        )
 
-    def convert_to_dict(self):
+    def convert_to_dict(self) -> dict[str, dict[str, str | float]]:
         player_1, score_1, color_1 = self.match_tuple[0]
         player_2, score_2, color_2 = self.match_tuple[1]
         return {
@@ -152,7 +178,7 @@ class Match:
 
 
 class Player:
-    def __init__(self, name, first_name, birth_date, identifier):
+    def __init__(self, name: str, first_name: str, birth_date: str, identifier: str):
         self.name = name
         self.first_name = first_name
         self.birth_date = birth_date
@@ -175,7 +201,7 @@ class Player:
     def __repr__(self):
         return str(self)
 
-    def convert_to_dict(self):
+    def convert_to_dict(self) -> dict[str, str]:
         """
         Method that converts the player's data to a dictionary.
         Returns: The dictionary of the player's data.
@@ -236,7 +262,7 @@ class Players(UserList):
     def __repr__(self):
         return str(self)
 
-    def add_player(self, player):
+    def add_player(self, player: Player) -> None:
         """
         Method that adds a player to the list of players.
         Args:
@@ -244,7 +270,7 @@ class Players(UserList):
         """
         self.data.append(player)
 
-    def player_exists(self, player):
+    def player_exists(self, player: Player) -> int:
         """
         Method that checks if a player identifier is already in the list of players.
         Args:
@@ -260,13 +286,13 @@ class Players(UserList):
             return 2
         return 3
 
-    def shuffle(self):
+    def shuffle(self) -> None:
         """
         Method that shuffles the list of players.
         """
         random.shuffle(self.data)
 
-    def convert_to_dict(self):
+    def convert_to_dict(self) -> dict[str, dict]:
         """
         Method that converts the players' data to a dictionary.
         Returns:
@@ -274,7 +300,7 @@ class Players(UserList):
         """
         return {str(player.identifier): player.convert_to_dict() for player in self}
 
-    def convert_dict_to_players(self, dictionary):
+    def convert_dict_to_players(self, dictionary) -> None:
         """
         Method that converts a players' datas in a dictionary to the Players object.
         Args:
@@ -289,7 +315,7 @@ class Players(UserList):
             ))
 
     @staticmethod
-    def generate_random_identifier():
+    def generate_random_identifier() -> str:
         """
         Method that generates a random identifier. Used only for testing purposes.
         Returns:
@@ -304,7 +330,7 @@ class Players(UserList):
             number += fake.word(ext_word_list=digits)
         return letter_1 + letter_2 + number
 
-    def generate_random_player(self):
+    def generate_random_player(self) -> Player:
         """
         Methode that generates a random player identifier. Used only for testing purposes.
         Returns:
@@ -316,7 +342,7 @@ class Players(UserList):
                         self.generate_random_identifier())
         return player
 
-    def generate_random_players(self, number_of_players):
+    def generate_random_players(self, number_of_players) -> None:
         """
         Method that generates randomly the players list accordingly to the given number of players.
         Used only for testing purposes.
@@ -325,7 +351,7 @@ class Players(UserList):
         """
         self.data = [self.generate_random_player() for _ in range(number_of_players)]
 
-    def load_players_from_json(self, file_path):
+    def load_players_from_json(self, file_path) -> bool | None:
         """
         Method that loads the players from a json file.
         Args:
@@ -343,8 +369,9 @@ class Players(UserList):
             console.print(f"[bright_white]{file_path} : [/bright_white][bright_red]❌ file not found ![/bright_red]\n")
             self.save_players_to_json(PLAYERS_DATA_JSON)
             console.print("[bright_green]File Created ![/bright_green]\n")
+            return None
 
-    def save_players_to_json(self, file_path):
+    def save_players_to_json(self, file_path) -> bool:
         """
         Method that saves the players to a json file.
         Args:
@@ -362,7 +389,7 @@ class Players(UserList):
             console.print(f"[bright_white]{file_path} : [/bright_white][bright_red]❌ file not found ![/bright_red]\n")
             return False
 
-    def get_player_by_identifier(self, identifier: str):
+    def get_player_by_identifier(self, identifier: str) -> Player | None:
         """
         Method that gets a player by identifier.
         Args:
@@ -441,7 +468,7 @@ class Round:
     def __repr__(self):
         return str(self)
 
-    def set_start_date(self):
+    def set_start_date(self) -> None:
         """
         Method that sets the start date of the round.
         """
@@ -449,7 +476,7 @@ class Round:
         self.start_date = now.strftime("%d/%m/%Y")
         self.start_time = now.strftime("%H:%M:%S")
 
-    def set_end_date(self):
+    def set_end_date(self) -> None:
         """
         Method that sets the end date of the round.
         """
@@ -458,7 +485,7 @@ class Round:
         self.end_time = now.strftime("%H:%M:%S")
 
     @staticmethod
-    def get_random_scores():
+    def get_random_scores() -> tuple[float, float]:
         """
         Method that gets a random score between 0, 1 and 0.5. Used only for testing purposes.
         Returns:
@@ -471,7 +498,7 @@ class Round:
             return 0, 1
         return 0.5, 0.5
 
-    def specify_random_scores(self):
+    def specify_random_scores(self) -> None:
         """
         Method that specifies random scores for all matches in the round.
         """
@@ -479,7 +506,7 @@ class Round:
             scores = self.get_random_scores()
             match.set_scores(scores[0], scores[1])
 
-    def convert_to_dict(self):
+    def convert_to_dict(self) -> dict[str, dict[str, dict] | str | datetime]:
         """
         Method that converts the round's data to a dictionary.
         Returns: The dictionary of the round's data.
@@ -551,7 +578,7 @@ class Tournament:
     def __repr__(self):
         return str(self)
 
-    def is_completed(self):
+    def is_completed(self) -> bool:
         """
         Methods that checks if the round is completed.
         Returns:
@@ -563,7 +590,7 @@ class Tournament:
             return False
         return False
 
-    def add_players(self, players):
+    def add_players(self, players: Players) -> None:
         """
         Method that copies the players object and adds them to the tournament Players object.
         Args:
@@ -574,7 +601,7 @@ class Tournament:
         for player in players:
             self.players.add_player(player)
 
-    def add_round(self, tournament_round):
+    def add_round(self, tournament_round: Round) -> None:
         """
         Method that adds a round to the tournament Rounds object.
         Args:
@@ -583,7 +610,7 @@ class Tournament:
         self.rounds.append(tournament_round)
 
     @staticmethod
-    def compute_player_scores(tournament):
+    def compute_player_scores(tournament) -> tuple[dict[str, float], dict[str, Player]]:
         """
         Method that computes the player scores for all players in the tournament.
         Args:
@@ -598,11 +625,10 @@ class Tournament:
 
         for rnd in getattr(tournament, "rounds", []):
             for match in getattr(rnd, "matches", []) or []:
-                # match.match_tuple = ([Player, score, color], [Player, score, color])
+
                 player_1_obj, score_1, _ = match.match_tuple[0]
                 player_2_obj, score_2, _ = match.match_tuple[1]
 
-                # convert in float if necessary
                 score_1_val = float(score_1) if score_1 is not None else 0.0
                 score_2_val = float(score_2) if score_2 is not None else 0.0
 
@@ -611,15 +637,13 @@ class Tournament:
 
         return scores, id_to_player
 
-    def sort_players_by_score(self, verbose=False):
+    def sort_players_by_score(self, verbose=False) -> None:
         """
         Method that sorts the players in Players object by their scores.
         Args:
             verbose (bool): Boolean flag to determine if scoreboard should be printed.
         """
-        scores = defaultdict(float)
-
-        print(Fore.YELLOW + "⮞ Sorting players by score ...")
+        scores: dict[str, float] = defaultdict(float)
 
         player_by_id = {player.identifier: player for player in self.players}
 
@@ -650,33 +674,29 @@ class Tournament:
         sorted_players = sorted(self.players, key=lambda p: scores.get(p.identifier, 0.0), reverse=True)
         self.players[:] = sorted_players
 
-    def create_round(self, round_number):
+    def create_round(self, round_number: int) -> None:
         """
         Method that creates a round object.
         Args:
             round_number (int): The round number.
         """
         if round_number == 1:
-            # shuffles players
+
             self.players.shuffle()
         else:
             self.sort_players_by_score()
 
-        # create round
         round_obj = Round(f"Round {round_number}")
 
-        # create matches
         self.create_matches(self.players, round_obj)
 
-        # Set start date/time
         round_obj.set_start_date()
 
-        # Append round to tournament
         self.rounds.append(round_obj)
 
-        print(round_obj)
+        console.print(round_obj)
 
-    def create_matches(self, players, round_obj):
+    def create_matches(self, players: Players, round_obj: Round) -> None:
         """
         Creates matches for a given round, ensuring players haven't played each other before.
 
@@ -704,7 +724,7 @@ class Tournament:
                 second = players_list.pop(0)
                 round_obj.matches.append(Match(first, second))
 
-    def match_already_played(self, player_1, player_2):
+    def match_already_played(self, player_1: Player, player_2: Player) -> bool:
         """
         Method that checks if two players have already faced each other in this tournament.
         Args:
@@ -726,7 +746,7 @@ class Tournament:
                     return True
         return False
 
-    def convert_to_dict(self):
+    def convert_to_dict(self) -> dict[str, str | datetime | dict[str, dict] | dict[Any, Any]]:
         """
         Method that converts the player's data to a dictionary.
         Returns: The dictionary of the player's data.
@@ -770,7 +790,7 @@ class Tournaments(UserList):
     def __repr__(self):
         return str(self)
 
-    def add_tournament(self, tournament):
+    def add_tournament(self, tournament) -> None:
         """
         Method that adds a tournament to the list of tournaments.
         Args:
@@ -778,7 +798,7 @@ class Tournaments(UserList):
         """
         self.data.append(tournament)
 
-    def tournament_exists(self, tournament):
+    def tournament_exists(self, tournament) -> bool:
         """
         Method that checks if a tournament name is already in the list of tournaments.
         Args:
@@ -789,7 +809,7 @@ class Tournaments(UserList):
         """
         return any(tournament_obj.name == tournament.name for tournament_obj in self.data)
 
-    def convert_dict_to_tournaments(self, dictionary):
+    def convert_dict_to_tournaments(self, dictionary) -> None:
         """
         Method that converts tournaments' datas in a dictionary to the Tournaments object.
         Args:
@@ -839,16 +859,20 @@ class Tournaments(UserList):
                     color_1 = match_attrs["player1"]["color"]
                     color_2 = match_attrs["player2"]["color"]
 
-                    match = Match(player_1, player_2)
-                    match.set_scores(player_1, score_1, player_2, score_2)
-                    match.set_colors(color_1, color_2)
+                    match = None
+                    if player_1 is not None and player_2 is not None:
+                        match = Match(player_1, player_2)
+                        match.set_scores(player_1, score_1, player_2, score_2)
+                        match.set_colors(color_1, color_2)
+                    else:
+                        print("Un joueur est manquant !")
                     rnd.matches.append(match)
 
                 tournament.rounds.append(rnd)
 
             self.add_tournament(tournament)
 
-    def load_tournaments_from_json(self, file_path):
+    def load_tournaments_from_json(self, file_path) -> bool:
         """
         Method that loads tournaments from a json file
         Args:
@@ -868,8 +892,9 @@ class Tournaments(UserList):
             print(f"{file_path} : ❌ file not found !\n")
             self.save_tournament_to_json(TOURNAMENTS_DATA_JSON)
             print(Fore.GREEN + "File Created !\n")
+            return False
 
-    def save_tournament_to_json(self, file_path):
+    def save_tournament_to_json(self, file_path) -> bool:
         """
         Method that saves tournaments to a json file.
         Args:
@@ -889,7 +914,7 @@ class Tournaments(UserList):
             print(f"{file_path} : ❌ file not found !")
             return False
 
-    def convert_to_dict(self):
+    def convert_to_dict(self) -> dict[str, dict]:
         """
         Method that converts the tournaments' data to a dictionary.
         Returns:

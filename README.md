@@ -58,25 +58,32 @@ Or
 
 ## EXAMPLES
 
-![Example 1](./execution_example.jpg) 
-![Example 2](./execution_example_2.jpg) 
+![Example 1](./example_1.png) 
+![Example 2](./example_2.png) 
+![Example 3](./example_3.png) 
+![Example 4](./example_4.png) 
+![Example 5](./example_5.png) 
 
-### You will be prompted with a menu to:
-- ▷▷ 1. Create a tournament
-- ▷▷ 2. Update a tournament
-- ▷▷ 3. Add a player into database
-- ▷▷ 4. Display the club players
-- ▷▷ 5. Display a tournament
-- ▷▷ 6. Display all the tournaments
-- ▷▷ 7. Generate reports
+### You will be prompted with this menu :
+- ▷▷ 1. Tournament
+- ▷▷ 2. Players
+- ▷▷ 3. Reports
+- ▷▷ 4. Quit the app
+
+#### You will be prompted with a submenu, accordingly to your choice, to:
+- Add and display players
+- Create, update and display tournaments
+- Generate reports
 
 # DEPENDENCIES
 
-- colorama, 
-- flake8,
-- flake8-html,
+- colorama
+- flake8
+- flake8-html
 - faker
 - jinja2
+- mypy
+- rich
 
 # FLAKE8 Reports
 **Type the line below to generate reports with [flake8-html](https://pypi.org/project/flake8-html/) tool :**
@@ -89,4 +96,4 @@ Or
 # AUTHOR
 **Name**: Nicolas MARIE  
 **Track**: Python Developer – OpenClassrooms  
-**Project – Develop a Python app : Chess Tournament Manager – September 2025**
+**Project – Develop a Python app : Chess Tournament Manager – October 2025**

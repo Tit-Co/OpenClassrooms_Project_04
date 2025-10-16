@@ -94,7 +94,7 @@ class TournamentController:
         # View
         self.view = TournamentView()
 
-    def tournaments_menu(self):
+    def tournaments_menu(self) -> None:
         """
         Method that displays the "tournaments" menu.
         """
@@ -118,7 +118,7 @@ class TournamentController:
 
             action()
 
-    def get_tournament(self, tournament_name):
+    def get_tournament(self, tournament_name: str) -> Tournament | None:
         """
         Method that gets a tournament by name.
         Args:
@@ -133,7 +133,7 @@ class TournamentController:
         return None
 
     @staticmethod
-    def get_all_tournaments():
+    def get_all_tournaments() -> Tournaments:
         """
         Method that gets tournaments object from the json file
         Returns:
@@ -145,7 +145,7 @@ class TournamentController:
         tournaments.load_tournaments_from_json(TOURNAMENTS_DATA_JSON)
         return tournaments
 
-    def display_a_tournament(self):
+    def display_a_tournament(self) -> None:
         """
         Method that displays a tournament.
         """
@@ -162,7 +162,7 @@ class TournamentController:
             # Tournament completed
             self.display_completed_tournament()
 
-    def display_tournaments(self):
+    def display_tournaments(self) -> None:
         tournaments = self.get_all_tournaments()
         self.view.display_tournaments(tournaments)
 
@@ -182,7 +182,7 @@ class TournamentController:
             self.main_controller.player_controller.view.display_no_players()
             return
 
-    def create_tournament(self):
+    def create_tournament(self) -> None:
         """
         Method that creates a tournament object.
         """
@@ -226,7 +226,7 @@ class TournamentController:
             if self.tournaments.save_tournament_to_json(TOURNAMENTS_DATA_JSON):
                 self.view.display_tournament_added(self.current_tournament)
 
-    def display_completed_tournament(self):
+    def display_completed_tournament(self) -> None:
         """
         Method that displays a completed tournament object and the winner of the tournament.
         """
@@ -245,7 +245,7 @@ class TournamentController:
 
         self.view.display_winners(winners, max_score, self.current_tournament.name)
 
-    def tournament_exists(self, tournament_name):
+    def tournament_exists(self, tournament_name: str) -> bool:
         """
         Method that checks if a tournament exists.
         Args:
@@ -259,7 +259,7 @@ class TournamentController:
                 return True
         return False
 
-    def save_tournament(self, tournament_name):
+    def save_tournament(self, tournament_name: str) -> None:
         """
         Method that saves a tournament.
         Args:
@@ -273,7 +273,7 @@ class TournamentController:
         if self.tournaments.save_tournament_to_json(TOURNAMENTS_DATA_JSON):
             self.view.display_tournament_updated(self.current_tournament)
 
-    def update_tournament(self):
+    def update_tournament(self) -> None:
         """
         Method that updates a tournament. Called when the user select the second option in the main menu.
         """
@@ -296,7 +296,7 @@ class TournamentController:
 
                 tournament = self.get_tournament(tournament_name)
 
-                if tournament.is_completed():
+                if tournament is not None and tournament.is_completed():
                     self.current_tournament = tournament
                     self.display_completed_tournament()
                     self.view.display_tournament_completed()
@@ -329,7 +329,7 @@ class TournamentController:
                 self.display_completed_tournament()
 
     @staticmethod
-    def increment_score(player_score, increment):
+    def increment_score(player_score: float, increment: float) -> None:
         player_score += increment
 
     def set_tournament_scores(self):
@@ -359,7 +359,7 @@ class TournamentController:
 
         self.view.display_tournament_round_score_saved(rnd.round_name)
 
-    def select_tournament_players(self, players_number):
+    def select_tournament_players(self, players_number: int) -> Players:
         """
         Method that selects the tournaments players from all the players in database.
         Args:
@@ -393,7 +393,7 @@ class TournamentController:
 
         return selected_players
 
-    def display_update_tournament_sub_menu(self):
+    def display_update_tournament_sub_menu(self) -> None:
         """
         Method that displays the "update a tournament" sub menu.
         """
@@ -420,7 +420,7 @@ class PlayerController:
     def __init__(self):
         self.view = PlayerView()
 
-    def players_menu(self):
+    def players_menu(self) -> None:
         """
         Method that displays the "players" menu.
         """
@@ -443,7 +443,7 @@ class PlayerController:
             action()
 
     @staticmethod
-    def get_players():
+    def get_players() -> Players:
         """
         Method that gets players object from the json file
         Returns:
@@ -455,14 +455,14 @@ class PlayerController:
         players.load_players_from_json(PLAYERS_DATA_JSON)
         return players
 
-    def display_players(self):
+    def display_players(self) -> None:
         """
         Method that displays players object.
         """
         players = self.get_players()
         self.view.display_players(players)
 
-    def add_player_in_database(self):
+    def add_player_in_database(self) -> None:
         """
         Method that loads the players from the json file, creates a new player object with the datas given
         by the user. The new player datas are also saved in the json file.
@@ -492,7 +492,7 @@ class ReportController:
         self.main_controller = main_controller
         self.view = ReportView()
 
-    def reports_menu(self):
+    def reports_menu(self) -> None:
         """
         Method that displays the "reports" menu.
         """
@@ -516,7 +516,7 @@ class ReportController:
 
             action()
 
-    def save_report(self, path, content):
+    def save_report(self, path: Path, content: str) -> bool:
         """
         Method that saves the report with the given path.
         Args:
@@ -537,7 +537,7 @@ class ReportController:
             self.view.display_file_not_found(path)
             return False
 
-    def display_report(self, report):
+    def display_report(self, report: int) -> None:
         """
         Method that displays the report according to the report number given.
         Args:
@@ -546,15 +546,15 @@ class ReportController:
         Returns:
             A tuple with the template path and the HTML content.
         """
-        def report_alphabetically_players():
+        def report_alphabetically_players() -> tuple[Path, str]:
             content = self.generate_report_alphabetically_players()
             return ALPHABETICALLY_PLAYERS_REPORT, content
 
-        def report_tournaments():
+        def report_tournaments() -> tuple[Path, str]:
             content = self.generate_report_tournaments()
             return ALL_TOURNAMENTS_REPORT, content
 
-        def report_current_tournament_players():
+        def report_current_tournament_players() -> tuple[Path, str]:
             tournaments = self.main_controller.tournament_controller.get_all_tournaments()
 
             tournament_name = (self.main_controller.tournament_controller.
@@ -571,7 +571,7 @@ class ReportController:
 
             return CURRENT_TOURNAMENT_PLAYERS_REPORT, content
 
-        def report_current_tournament_rounds_and_matches():
+        def report_current_tournament_rounds_and_matches() -> tuple[Path, str]:
             tournaments = self.main_controller.tournament_controller.get_all_tournaments()
 
             tournament_name = (self.main_controller.tournament_controller.view.
@@ -614,7 +614,7 @@ class ReportController:
             else:
                 self.view.display_yes_no()
 
-    def generate_report_alphabetically_players(self):
+    def generate_report_alphabetically_players(self) -> str:
         """
         Method that generates the report with the players alphabetically sorted.
         Returns:
@@ -632,7 +632,7 @@ class ReportController:
 
         return html
 
-    def generate_report_tournaments(self):
+    def generate_report_tournaments(self) -> str:
         """
         Method that generates the report with the tournaments sorted.
         Returns:
@@ -650,7 +650,7 @@ class ReportController:
 
         return html
 
-    def generate_report_current_tournament_players(self, tournament):
+    def generate_report_current_tournament_players(self, tournament: Tournament) -> str:
         """
         Method that generates the report with the current tournament players sorted.
         Args:
@@ -672,7 +672,7 @@ class ReportController:
 
         return html
 
-    def generate_report_current_tournament_all_rounds_and_matches(self, tournament):
+    def generate_report_current_tournament_all_rounds_and_matches(self, tournament: Tournament) -> str:
         """
         Method that generates the report with all rounds and matches of the given tournament.
         Args:
