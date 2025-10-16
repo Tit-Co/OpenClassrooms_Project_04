@@ -557,9 +557,9 @@ class ReportController:
         def report_current_tournament_players() -> tuple[Path, str]:
             tournaments = self.main_controller.tournament_controller.get_all_tournaments()
 
-            tournament_name = (self.main_controller.tournament_controller.
+            tournament_name = (self.main_controller.tournament_controller.view.
                                prompt_for_selecting_tournament(tournaments))
-            self.main_controller.view.display_tournament_name(tournament_name)
+            self.main_controller.tournament_controller.view.display_tournament_name(tournament_name)
 
             current_tournament = Tournament("", "")
 
@@ -576,7 +576,7 @@ class ReportController:
 
             tournament_name = (self.main_controller.tournament_controller.view.
                                prompt_for_selecting_tournament(tournaments))
-            self.main_controller.view.display_tournament_name(tournament_name)
+            self.main_controller.tournament_controller.view.display_tournament_name(tournament_name)
 
             current_tournament = Tournament("", "")
 
@@ -659,13 +659,14 @@ class ReportController:
         Returns:
             HTML content of the report.
         """
-        template = self.main_controller.templates["current_tournament"]
+        template = self.main_controller.templates["current_tournament_players"]
 
         self.view.display_selected_tournament_title(tournament.name)
-        for player in tournament.players:
-            self.view.display_player(player)
 
         sorted_players = sorted(tournament.players, key=lambda p: p.name)
+
+        self.view.display_sorted_players(len(sorted_players), Players(sorted_players))
+
         tournament.players = sorted_players
 
         html = template.render(tournament=tournament)
@@ -681,7 +682,7 @@ class ReportController:
         Returns:
             HTML content of the report.
         """
-        template = self.main_controller.templates["tournament_all_rounds_and_matches"]
+        template = self.main_controller.templates["tournament_rounds_and_matches"]
 
         # Display
         self.view.display_selected_tournament_title(tournament.name)

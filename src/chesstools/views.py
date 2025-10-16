@@ -718,19 +718,18 @@ class ReportView:
     @staticmethod
     def display_sorted_players(number: int, players: Players) -> None:
         console.print(f"{number} [bright_white]players alphabetically sorted.[/bright_white]\n")
-        console.print(f"{players}\n")
+        console.print(players)
+        console.print("\n")
 
     @staticmethod
     def display_sorted_tournaments(tournaments: Tournaments) -> None:
-        console.print(f"{tournaments}\n")
+        console.print("\n[bright_white]The sorted tournaments.[/bright_white]\n")
+        console.print(tournaments)
+        console.print("\n")
 
     @staticmethod
     def display_selected_tournament_title(tournament_name: str) -> None:
-        console.print(f"\n[bright_white]The players of selected tournament[/bright_white] \"{tournament_name}\":\n")
-
-    @staticmethod
-    def display_player(player: Players) -> None:
-        console.print(player)
+        console.print("\n[bright_white]The players of selected tournament[/bright_white] \"{tournament_name}\":\n")
 
     @staticmethod
     def display_rnd(rnd: Round) -> None:
