@@ -37,13 +37,7 @@ PLAYERS_DATA_JSON = TOURNAMENT_FOLDER / Path("./players.json")
 
 
 class Match:
-    def __init__(
-        self,
-        player_1: Player,
-        player_2: Player,
-        score_1: float = 0.0,
-        score_2: float = 0.0,
-    ):
+    def __init__(self, player_1: Player, player_2: Player, score_1: float = 0.0, score_2: float = 0.0):
         match_1 = (player_1, score_1, "⚪")
         match_2 = (player_2, score_2, "⚫")
         if random.choice([True, False]):

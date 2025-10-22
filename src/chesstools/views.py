@@ -695,7 +695,7 @@ class ReportView:
         Returns:
             The answer.
         """
-        answer = Prompt.ask("\n[bright_white]▶ Do you want to generate the HTML report ? (y/n) [/bright_white]\n")
+        answer = Prompt.ask("\n[bright_white]▶ Do you want to generate the HTML report ? (y/n) [/bright_white]")
         return answer
 
     @staticmethod
