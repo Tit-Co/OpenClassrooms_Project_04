@@ -107,32 +107,6 @@ class Match:
     def __repr__(self):
         return str(self.match_tuple)
 
-    def set_scores(self, player_1: Player, score_1: float, player_2: Player, score_2: float) -> None:
-        """
-        Method that sets the scores of the match.
-        Args:
-            player_1 (Player): The player 1 associated to score 1.
-            score_1 (float): The score 1.
-            player_2 (Player): The player 2 associated to score 2.
-            score_2 (float): The score 2.
-        """
-
-        p1, s1, c1 = self.match_tuple[0]
-        p2, s2, c2 = self.match_tuple[1]
-
-        if p1 == player_1:
-            self.match_tuple = (
-                (p1, score_1, c1),
-                (p2, score_2, c2),
-            )
-        elif p1 == player_2:
-            self.match_tuple = (
-                (p1, score_2, c1),
-                (p2, score_1, c2),
-            )
-        else:
-            print("Scores bug !")
-
     def set_colors(self, color_1: str, color_2: str) -> None:
         """
         Method that sets the players color in the match.
@@ -298,14 +272,6 @@ class Round:
         if scenario == 1:
             return 0, 1
         return 0.5, 0.5
-
-    def specify_random_scores(self) -> None:
-        """
-        Method that specifies random scores for all matches in the round.
-        """
-        for match in self.matches:
-            scores = self.get_random_scores()
-            match.set_scores(scores[0], scores[1])
 
     def convert_to_dict(self) -> dict[str, dict[str, dict] | str | datetime]:
         """

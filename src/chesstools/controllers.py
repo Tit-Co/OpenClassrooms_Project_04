@@ -92,7 +92,7 @@ class TournamentsManager(UserList):
     def __init__(self, tournaments=None):
         super().__init__(tournaments or [])
 
-    def add_tournament(self, tournament) -> None:
+    def add_tournament(self, tournament: Tournament) -> None:
         """
         Method that adds a tournament to the list of tournaments.
         Args:
@@ -100,7 +100,7 @@ class TournamentsManager(UserList):
         """
         self.data.append(tournament)
 
-    def tournament_exists(self, tournament) -> bool:
+    def tournament_exists(self, tournament: Tournament) -> bool:
         """
         Method that checks if a tournament name is already in the list of tournaments.
         Args:
@@ -111,10 +111,11 @@ class TournamentsManager(UserList):
         """
         return any(tournament_obj.name == tournament.name for tournament_obj in self.data)
 
-    def convert_dict_to_tournaments(self, dictionary) -> None:
+    def convert_dict_to_tournaments(self, controller: TournamentController, dictionary: dict) -> None:
         """
         Method that converts tournaments' datas in a dictionary to the Tournaments object.
         Args:
+            controller (TournamentController): Controller object.
             dictionary (dict): Dictionary to be converted.
         """
         for name, attrs in dictionary.items():
@@ -163,20 +164,21 @@ class TournamentsManager(UserList):
                     match = None
                     if player_1 is not None and player_2 is not None:
                         match = Match(player_1, player_2)
-                        match.set_scores(player_1, score_1, player_2, score_2)
+                        controller.set_match_scores(match, player_1, score_1, player_2, score_2)
                         match.set_colors(color_1, color_2)
                     else:
-                        print("A player is missing !")
+                        return
                     rnd.matches.append(match)
 
                 tournament.rounds.append(rnd)
 
             self.add_tournament(tournament)
 
-    def load_tournaments_from_json(self, file_path) -> bool:
+    def load_tournaments_from_json(self, controller: TournamentController, file_path: Path) -> bool:
         """
         Method that loads tournaments from a json file
         Args:
+            controller (TournamentController): Controller object.
             file_path (Path): Path to the json file to be loaded.
 
         Returns:
@@ -186,19 +188,18 @@ class TournamentsManager(UserList):
             with open(file_path, encoding="utf-8") as json_file:
                 data = json.load(json_file)
                 # convert dictionary datas in Tournaments object
-                self.convert_dict_to_tournaments(data)
+                self.convert_dict_to_tournaments(controller, data)
                 return True
 
         except FileNotFoundError:
-            print(f"{file_path} : ❌ file not found !\n")
-            self.save_tournament_to_json(TOURNAMENTS_DATA_JSON)
-            print("File Created !\n")
+            self.save_tournament_to_json(controller, TOURNAMENTS_DATA_JSON)
             return False
 
-    def save_tournament_to_json(self, file_path) -> bool:
+    def save_tournament_to_json(self, controller: TournamentController, file_path: Path) -> bool:
         """
         Method that saves tournaments to a json file.
         Args:
+            controller (TournamentController): The TournamentController object.
             file_path (Path): Path to the json file to be saved.
 
         Returns:
@@ -212,7 +213,7 @@ class TournamentsManager(UserList):
                 return True
 
         except FileNotFoundError:
-            print(f"{file_path} : ❌ file not found !")
+            controller.view.display_file_not_found(file_path)
             return False
 
     def convert_to_dict(self) -> dict[str, dict]:
@@ -269,8 +270,7 @@ class TournamentController:
                 return t
         return None
 
-    @staticmethod
-    def get_all_tournaments() -> TournamentsManager:
+    def get_all_tournaments(self) -> TournamentsManager:
         """
         Method that gets tournaments object from the json file
         Returns:
@@ -278,7 +278,7 @@ class TournamentController:
         """
         tournaments = TournamentsManager()
 
-        tournaments.load_tournaments_from_json(TOURNAMENTS_DATA_JSON)
+        tournaments.load_tournaments_from_json(self, TOURNAMENTS_DATA_JSON)
         return tournaments
 
     def display_a_tournament(self) -> None:
@@ -310,8 +310,8 @@ class TournamentController:
         Returns:
 
         """
-        if len(self.main_controller.player_controller.players_manager.all_players()) == 0:
-            self.main_controller.player_controller.get_players()
+        self.main_controller.player_controller.get_players()
+
         players = self.main_controller.player_controller.players_manager
         if len(players) >= 4:
             self.create_tournament()
@@ -379,7 +379,7 @@ class TournamentController:
             self.view.display_tournament_exists()
         else:
             self.tournaments.add_tournament(self.current_tournament)
-            if self.tournaments.save_tournament_to_json(TOURNAMENTS_DATA_JSON):
+            if self.tournaments.save_tournament_to_json(self, TOURNAMENTS_DATA_JSON):
                 self.view.display_tournament_added(self.current_tournament)
 
     def display_completed_tournament(self) -> None:
@@ -426,8 +426,39 @@ class TournamentController:
                 self.tournaments.remove(tournament)
                 self.tournaments.add_tournament(self.current_tournament)
 
-        if self.tournaments.save_tournament_to_json(TOURNAMENTS_DATA_JSON):
+        if self.tournaments.save_tournament_to_json(self, TOURNAMENTS_DATA_JSON):
             self.view.display_tournament_updated(self.current_tournament)
+
+    def set_match_scores(self, match: Match,
+                         player_1: Player,
+                         score_1: float,
+                         player_2: Player,
+                         score_2: float) -> None:
+        """
+        Method that sets the scores of the match.
+        Args:
+            match (Match): Match object.
+            player_1 (Player): The player 1 associated to score 1.
+            score_1 (float): The score 1.
+            player_2 (Player): The player 2 associated to score 2.
+            score_2 (float): The score 2.
+        """
+
+        p1, s1, c1 = match.match_tuple[0]
+        p2, s2, c2 = match.match_tuple[1]
+
+        if p1 == player_1:
+            match.match_tuple = (
+                (p1, score_1, c1),
+                (p2, score_2, c2),
+            )
+        elif p1 == player_2:
+            match.match_tuple = (
+                (p1, score_2, c1),
+                (p2, score_1, c2),
+            )
+        else:
+            self.view.display_scores_bug()
 
     def update_tournament(self) -> None:
         """
@@ -518,7 +549,7 @@ class TournamentController:
 
             score_2 = actions.get(float(score_1), 0)
 
-            match.set_scores(player_1, score_1, player_2, score_2)
+            self.set_match_scores(match, player_1, score_1, player_2, score_2)
 
         self.view.display_tournament_round_score_saved(rnd.round_name)
 
@@ -533,8 +564,8 @@ class TournamentController:
         """
         number = int(players_number)
         current_number = 0
-        if len(self.main_controller.player_controller.players_manager.all_players()) == 0:
-            self.main_controller.player_controller.get_players()
+
+        self.main_controller.player_controller.get_players()
 
         all_players = self.main_controller.player_controller.players_manager.all_players()
         selected_players = PlayersManager()
@@ -652,10 +683,11 @@ class PlayersManager(UserList):
                 identifier
             ))
 
-    def load_players_from_json(self, file_path) -> bool | None:
+    def load_players_from_json(self, controller: PlayerController, file_path: Path) -> bool | None:
         """
         Method that loads the players from a json file.
         Args:
+            controller (PlayerController): Controller object.
             file_path (Path): Path to the json file.
         Returns (bool) : True if the file was successfully loaded. False otherwise.
         """
@@ -666,13 +698,14 @@ class PlayersManager(UserList):
                 return True
 
         except FileNotFoundError:
-            self.save_players_to_json(PLAYERS_DATA_JSON)
+            self.save_players_to_json(controller, PLAYERS_DATA_JSON)
             return None
 
-    def save_players_to_json(self, file_path) -> bool:
+    def save_players_to_json(self, controller: PlayerController, file_path: Path) -> bool:
         """
         Method that saves the players to a json file.
         Args:
+            controller (PlayerController): The controller object.
             file_path (Path): Path to the json file.
         Returns (bool): True if the saved players were saved. False otherwise.
         """
@@ -684,7 +717,7 @@ class PlayersManager(UserList):
                 return True
 
         except FileNotFoundError:
-            console.print(f"[bright_white]{file_path} : [/bright_white][bright_red]❌ file not found ![/bright_red]\n")
+            controller.view.display_file_not_found(file_path)
             return False
 
     def get_player_by_identifier(self, identifier: str) -> Player | None:
@@ -733,14 +766,15 @@ class PlayerController:
         Returns:
             Players object.
         """
-        self.players_manager.load_players_from_json(PLAYERS_DATA_JSON)
+        self.players_manager.clear()
+        self.players_manager.load_players_from_json(self, PLAYERS_DATA_JSON)
 
     def display_players(self) -> None:
         """
         Method that displays players object.
         """
-        if len(self.players_manager.all_players()) == 0:
-            self.get_players()
+        self.get_players()
+
         self.view.display_players(self.players_manager)
 
     def add_player_in_database(self) -> None:
@@ -748,9 +782,7 @@ class PlayerController:
         Method that loads the players from the json file, creates a new player object with the datas given
         by the user. The new player datas are also saved in the json file.
         """
-
-        if len(self.players_manager.all_players()) == 0:
-            self.get_players()
+        self.get_players()
 
         while True:
             name = self.view.prompt_for_player_name()
@@ -780,7 +812,7 @@ class PlayerController:
 
         self.players_manager.add_player(player)
 
-        if self.players_manager.save_players_to_json(PLAYERS_DATA_JSON):
+        if self.players_manager.save_players_to_json(self, PLAYERS_DATA_JSON):
             self.view.display_player_added(player)
 
 
@@ -941,8 +973,8 @@ class ReportController:
         """
         template = self.main_controller.templates["players"]
 
-        if len(self.main_controller.player_controller.players_manager.all_players()) == 0:
-            self.main_controller.player_controller.get_players()
+        self.main_controller.player_controller.get_players()
+
         players = self.main_controller.player_controller.players_manager
 
         sorted_players = sorted(players, key=lambda p: p.name)

@@ -1,5 +1,6 @@
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Iterable
 
 from rich import box
@@ -560,6 +561,14 @@ class TournamentView:
         console.print("[bold bright_red]❌[/bold bright_red] [bright_red]No players/scores found.[/bright_red]")
 
     @staticmethod
+    def display_scores_bug() -> None:
+        console.print("[bold bright_red]❌[/bold bright_red] [bright_red]Scores bug ![/bright_red]")
+
+    @staticmethod
+    def display_file_not_found(file_path: Path) -> None:
+        console.print(f"[bright_white]{file_path} : [/bright_white][bright_red]❌ file not found ![/bright_red]\n")
+
+    @staticmethod
     def display_winners(winners: list[Player], max_score: float, tournament_name: str) -> None:
         """
         Method that displays the tournament's winner(s).
@@ -865,6 +874,10 @@ class PlayerView:
         console.print(f"[bright_green]✅ New player added to database ![/bright_green]\n"
                       f"{player.__rich_console__(console)}")
 
+    @staticmethod
+    def display_file_not_found(file_path: Path) -> None:
+        console.print(f"[bright_white]{file_path} : [/bright_white][bright_red]❌ file not found ![/bright_red]\n")
+
 
 class ReportView:
 
@@ -914,11 +927,11 @@ class ReportView:
         return answer
 
     @staticmethod
-    def display_file_not_found(path: str) -> None:
+    def display_file_not_found(path: Path) -> None:
         console.print(f"{path} : [bold bright_red]❌[/bold bright_red] [bright_red]file not found ![/bright_red]")
 
     @staticmethod
-    def display_report_generated(path: str) -> None:
+    def display_report_generated(path: Path) -> None:
         console.print(f"[bright_white]The HTML report has been generated.\nHere ⯈[/bright_white] {path}\n")
 
     @staticmethod
