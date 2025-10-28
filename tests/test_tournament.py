@@ -1,5 +1,5 @@
 import unittest
-from src.chesstools.models import Tournament, Round, Match, Player, Players
+from src.chesstools.models import Tournament, Round, Match, Player
 
 
 class TestTournament(unittest.TestCase):
@@ -13,7 +13,6 @@ class TestTournament(unittest.TestCase):
             place="Paris",
             start_date="2025-09-15",
             end_date="2025-09-17",
-            players=Players([self.player_1, self.player_2]),
             description="Demo",
             rounds_number=2,
             current_round=1,
