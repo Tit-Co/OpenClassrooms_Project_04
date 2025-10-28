@@ -12,7 +12,7 @@ The goal was to develop a Python offline application capable of:
 
 # PROJECT STRUCTURE
 
-![Folders and files structure](./structure.jpg)
+![Folders and files structure](./structure.png)
 
 # INSTALLATION
 
