@@ -63,6 +63,7 @@ Or
 ![Example 3](./example_3.png) 
 ![Example 4](./example_4.png) 
 ![Example 5](./example_5.png) 
+![Flake8 report](./flake8-report.png) 
 
 ### You will be prompted with this menu :
 - ▷▷ 1. Tournament

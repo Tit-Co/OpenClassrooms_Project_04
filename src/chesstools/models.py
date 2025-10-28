@@ -1,25 +1,18 @@
 from __future__ import annotations
 
 # Standard library imports
-import json
 import random
-import string
 import sys
-from collections import UserList, defaultdict
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import faker
 # Third-party imports
-from colorama import Fore, Style, init
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-
-
-# Initialize Colorama
-init(autoreset=True)
 
 # Initialize Console
 console = Console(
@@ -99,14 +92,14 @@ class Match:
         score_1_display = score_1 if score_1 is not None else 0
         score_2_display = score_2 if score_2 is not None else 0
 
-        prefix = Fore.WHITE + Style.BRIGHT + "┝╍ "
-        color_1_ = Fore.WHITE + f"{color_1.upper()}"
-        color_2_ = Fore.WHITE + f"{color_2.upper()}"
+        prefix = "┝╍ "
+        color_1_ = f"{color_1.upper()}"
+        color_2_ = f"{color_2.upper()}"
         sep = " - "
         score = " - score: "
         line1 = prefix + f"{player_1}" + sep + color_1_ + score + f"{score_1_display}\n"
         bar = "│ "
-        vs = Fore.YELLOW + Style.DIM + "VS\n"
+        vs = "VS\n"
         line2 = prefix + f"{player_2}" + sep + color_2_ + score + f"{score_2_display}\n"
 
         return line1 + bar + vs + line2
@@ -155,6 +148,11 @@ class Match:
         )
 
     def convert_to_dict(self) -> dict[str, dict[str, str | float]]:
+        """
+        Method that converts the match tuple to a dictionary.
+        Returns:
+
+        """
         player_1, score_1, color_1 = self.match_tuple[0]
         player_2, score_2, color_2 = self.match_tuple[1]
         return {
@@ -186,10 +184,10 @@ class Player:
         return str_id + sep + str_name + str_date
 
     def __str__(self):
-        str_id = Fore.RED + Style.DIM + f"{self.identifier}"
-        sep = Fore.WHITE + Style.NORMAL + " - "
-        str_name = Fore.BLUE + Style.BRIGHT + f"{self.first_name} {self.name.upper()} "
-        str_date = Fore.WHITE + Style.NORMAL + f"born on {self.birth_date}"
+        str_id = f"{self.identifier}"
+        sep = " - "
+        str_name = f"{self.first_name} {self.name.upper()} "
+        str_date = f"born on {self.birth_date}"
         return str_id + sep + str_name + str_date
 
     def __repr__(self):
@@ -203,197 +201,6 @@ class Player:
         return {"name": self.name,
                 "first_name": self.first_name,
                 "birth_date": self.birth_date}
-
-# @dataclass
-# class Player:
-#
-#     name: str
-#     birth_date: str
-#
-#     def __str__(self):
-#         str_id = Fore.RED + Style.DIM + f"{self.identifier}"
-#         sep = Fore.WHITE + Style.NORMAL + " - "
-#         str_na = Fore.BLUE + Style.BRIGHT + f"{self.first_name} {self.name.upper()} "
-#         str_da = Fore.WHITE + Style.NORMAL + f"born on {self.birth_date}"
-#         return str_id + sep + str_na + str_da
-#
-#     def __repr__(self):
-#         return str(self)
-
-# player  = PLayer()
-# player.__dict__
-
-    # Create init without
-
-
-class Players(UserList):
-    def __init__(self, players=None):
-        super().__init__(players or [])
-
-    def __rich_console__(self, console, *args, **kwargs):
-        header = Panel("ALL PLAYERS", border_style="bright_red", style="bright_red", expand=False)
-        yield header
-
-        table = Table(show_header=False, header_style="bright_red", border_style="bright_red")
-
-        table.add_column("Identifier", justify="left", style="bold red")
-
-        for player in self:
-            table.add_row(player.__rich_console__(console))
-
-        yield table
-
-    def __str__(self, indent=0):
-        prefix = " " * indent
-        players_str = ""
-        for player in self:
-            prefix_str = Fore.WHITE + Style.BRIGHT + f"{prefix}│ ┝╍ "
-            players_str += prefix_str + f"{player}\n"
-        header = Fore.WHITE + Style.BRIGHT + f"{prefix}┌ ALL PLAYERS :\n"
-        end = Fore.WHITE + Style.BRIGHT + f"{prefix}└──────────────"
-        return header + f"{players_str}" + end
-
-    def __repr__(self):
-        return str(self)
-
-    def add_player(self, player: Player) -> None:
-        """
-        Method that adds a player to the list of players.
-        Args:
-            player (Player): Player to be added.
-        """
-        self.data.append(player)
-
-    def player_exists(self, player: Player) -> int:
-        """
-        Method that checks if a player identifier is already in the list of players.
-        Args:
-            player (Player): Player to be checked.
-
-        Returns:
-            bool: True if the player identifier exists in the list of players.
-        """
-        if any(p.identifier == player.identifier for p in self.data):
-            return 1
-        elif (any(p.name.lower() == player.name.lower() for p in self.data) and
-              any(p.first_name.lower() == player.first_name.lower() for p in self.data)):
-            return 2
-        return 3
-
-    def shuffle(self) -> None:
-        """
-        Method that shuffles the list of players.
-        """
-        random.shuffle(self.data)
-
-    def convert_to_dict(self) -> dict[str, dict]:
-        """
-        Method that converts the players' data to a dictionary.
-        Returns:
-            The dictionary of the players' data.
-        """
-        return {str(player.identifier): player.convert_to_dict() for player in self}
-
-    def convert_dict_to_players(self, dictionary) -> None:
-        """
-        Method that converts a players' datas in a dictionary to the Players object.
-        Args:
-            dictionary (dict): Dictionary to be converted.
-        """
-        for identifier, attrs in dictionary.items():
-            self.add_player(Player(
-                attrs["name"],
-                attrs["first_name"],
-                attrs["birth_date"],
-                identifier
-            ))
-
-    @staticmethod
-    def generate_random_identifier() -> str:
-        """
-        Method that generates a random identifier. Used only for testing purposes.
-        Returns:
-            The random identifier.
-        """
-        alphabet = string.ascii_letters.lower()
-        letter_1 = fake.word(ext_word_list=alphabet).capitalize()
-        letter_2 = fake.word(ext_word_list=alphabet).capitalize()
-        digits = string.digits
-        number = ""
-        for _ in range(5):
-            number += fake.word(ext_word_list=digits)
-        return letter_1 + letter_2 + number
-
-    def generate_random_player(self) -> Player:
-        """
-        Methode that generates a random player identifier. Used only for testing purposes.
-        Returns:
-            A player object.
-        """
-        player = Player(fake.last_name(),
-                        fake.first_name(),
-                        fake.date_of_birth().strftime("%d/%m/%Y"),
-                        self.generate_random_identifier())
-        return player
-
-    def generate_random_players(self, number_of_players) -> None:
-        """
-        Method that generates randomly the players list accordingly to the given number of players.
-        Used only for testing purposes.
-        Args:
-            number_of_players (int): Number of players to be generated.
-        """
-        self.data = [self.generate_random_player() for _ in range(number_of_players)]
-
-    def load_players_from_json(self, file_path) -> bool | None:
-        """
-        Method that loads the players from a json file.
-        Args:
-            file_path (Path): Path to the json file.
-        Returns (bool) : True if the file was successfully loaded. False otherwise.
-        """
-        try:
-            with open(file_path, encoding="utf-8") as json_file:
-                data = json.load(json_file)
-                # convert dictionary datas in Player object
-                self.convert_dict_to_players(data)
-                return True
-
-        except FileNotFoundError:
-            console.print(f"[bright_white]{file_path} : [/bright_white][bright_red]❌ file not found ![/bright_red]\n")
-            self.save_players_to_json(PLAYERS_DATA_JSON)
-            console.print("[bright_green]File Created ![/bright_green]\n")
-            return None
-
-    def save_players_to_json(self, file_path) -> bool:
-        """
-        Method that saves the players to a json file.
-        Args:
-            file_path (Path): Path to the json file.
-        Returns (bool): True if the saved players were saved. False otherwise.
-        """
-        try:
-            file_path.parent.mkdir(exist_ok=True)
-            with open(file_path, "w", encoding="utf-8") as json_file:
-                players_dict = self.convert_to_dict()
-                json.dump(players_dict, json_file, ensure_ascii=False, indent=4)
-                return True
-
-        except FileNotFoundError:
-            console.print(f"[bright_white]{file_path} : [/bright_white][bright_red]❌ file not found ![/bright_red]\n")
-            return False
-
-    def get_player_by_identifier(self, identifier: str) -> Player | None:
-        """
-        Method that gets a player by identifier.
-        Args:
-            identifier (str): Identifier of the player to be retrieved.
-
-        Returns:
-            The player object with the given identifier. Or None if not found.
-        """
-        players = [p for p in self if p.identifier == identifier]
-        return players[0] if players else None
 
 
 class Round:
@@ -435,15 +242,15 @@ class Round:
         yield table_0
 
     def __str__(self):
-        start = Fore.WHITE + Style.DIM + f"{self.start_date} {self.start_time}" \
+        start = f"{self.start_date} {self.start_time}" \
             if self.start_date and self.start_time else "Not started"
-        end = Fore.WHITE + Style.DIM + f"{self.end_date} {self.end_time}" \
+        end = f"{self.end_date} {self.end_time}" \
             if self.end_date and self.end_time else "Not finished"
 
-        prefix_dates = Fore.WHITE + Style.DIM + " (from "
-        sep = Fore.WHITE + Style.DIM + " → "
-        suffix_dates = Fore.WHITE + Style.DIM + ")"
-        round_name = Fore.WHITE + Style.BRIGHT + f"{self.round_name}"
+        prefix_dates = " (from "
+        sep = " → "
+        suffix_dates = ")"
+        round_name = f"{self.round_name}"
 
         round_str = round_name + prefix_dates + f"{start}" + sep + f"{end}" + suffix_dates
 
@@ -454,9 +261,9 @@ class Round:
         for match in self.matches:
             matches_str += f"{match}\n"
 
-        prefix = Fore.WHITE + Style.BRIGHT + "- The "
-        middle = Fore.WHITE + Style.BRIGHT + " has "
-        suffix = Fore.WHITE + Style.BRIGHT + " matches:\n\n"
+        prefix = "- The "
+        middle = " has "
+        suffix = " matches:\n\n"
         return prefix + f"{round_str}" + middle + f"{len(self.matches)}" + suffix + f"{matches_str}"
 
     def __repr__(self):
@@ -516,8 +323,8 @@ class Round:
 
 
 class Tournament:
-    def __init__(self, name, place, start_date=None, end_date=None, players=None, description="", current_round=1,
-                 rounds_number=NUMBER_OF_ROUNDS):
+    def __init__(self, name: str, place: str, start_date=None, end_date=None, description: str = "",
+                 current_round: int = 1, rounds_number: int = NUMBER_OF_ROUNDS):
         self.name = name
         self.place = place
         self.start_date = start_date
@@ -526,13 +333,7 @@ class Tournament:
         self.current_round = current_round
         self.rounds = []
         self.description = description
-
-        if players is None:
-            self.players = Players()
-        elif isinstance(players, Players):
-            self.players = players
-        else:
-            self.players = Players(players)
+        self.players = []
 
     def __rich_console__(self, console, *args, **kwargs):
         rounds_str = ""
@@ -554,19 +355,18 @@ class Tournament:
     def __str__(self):
         rounds_str = ""
         if self.rounds:
-            prefix = Fore.MAGENTA + Style.BRIGHT + "│"
-            prefix_rnd = Fore.WHITE + Style.NORMAL + "   │"
-            rounds_str = prefix + Fore.WHITE + Style.BRIGHT + "   ┌ ALL ROUNDS :\n"
+            prefix = "│"
+            prefix_rnd = "   │"
+            rounds_str = prefix + "   ┌ ALL ROUNDS :\n"
             for rnd in self.rounds:
                 for line in str(rnd).splitlines():
                     rounds_str += prefix + prefix_rnd + f" {line}\n"
-            suffix = Fore.WHITE + Style.NORMAL + "   └──────────────\n"
+            suffix = "   └──────────────\n"
             rounds_str += prefix + suffix
 
-        name = Fore.MAGENTA + Style.BRIGHT + f"{self.name.upper()} "
-        place_dates = Fore.WHITE + Style.NORMAL + (f"({self.place}, {self.start_date} → {self.end_date}, "
-                                                   f"currently in round {self.current_round} of {self.rounds_number} "
-                                                   f"rounds, description : {self.description})\n")
+        name = f"{self.name.upper()} "
+        place_dates = (f"({self.place}, {self.start_date} → {self.end_date} currently in round "
+                       f"{self.current_round} of {self.rounds_number} rounds, description : {self.description})\n")
         return name + place_dates + f"{rounds_str}"
 
     def __repr__(self):
@@ -584,16 +384,14 @@ class Tournament:
             return False
         return False
 
-    def add_players(self, players: Players) -> None:
+    def add_players(self, players: Iterable[Player]) -> None:
         """
         Method that copies the players object and adds them to the tournament Players object.
         Args:
             players (Players): Players object.
         """
-        if not isinstance(players, Players):
-            players = Players(players)
         for player in players:
-            self.players.add_player(player)
+            self.players.append(player)
 
     def add_round(self, tournament_round: Round) -> None:
         """
@@ -658,39 +456,31 @@ class Tournament:
 
             # debug : display the scoreboard if asked
             if verbose:
-                print(Fore.YELLOW + "⮞ Scoreboard :")
+                print("⮞ Scoreboard :")
                 for pid, score in sorted(scores.items(), key=lambda kv: kv[1], reverse=True):
                     player = player_by_id.get(pid)
                     label = f"{player.identifier} - {player.name} {player.first_name}" if player else pid
-                    print(Fore.YELLOW + f"⮡ {label}: {score}")
+                    print(f"⮡ {label}: {score}")
                 print("\n")
 
         sorted_players = sorted(self.players, key=lambda p: scores.get(p.identifier, 0.0), reverse=True)
         self.players[:] = sorted_players
 
-    def create_round(self, round_number: int) -> None:
+    def create_round(self, round_number: int, players: list) -> None:
         """
         Method that creates a round object.
         Args:
             round_number (int): The round number.
+            players (list): A list of Player objects.
         """
-        if round_number == 1:
-
-            self.players.shuffle()
-        else:
-            self.sort_players_by_score()
-
         round_obj = Round(f"Round {round_number}")
 
-        self.create_matches(self.players, round_obj)
-
+        self.create_matches(players, round_obj)
         round_obj.set_start_date()
 
         self.rounds.append(round_obj)
 
-        console.print(round_obj)
-
-    def create_matches(self, players: Players, round_obj: Round) -> None:
+    def create_matches(self, players: list, round_obj: Round) -> None:
         """
         Creates matches for a given round, ensuring players haven't played each other before.
 
@@ -752,166 +542,6 @@ class Tournament:
             "description": self.description,
             "current_round": self.current_round,
             "rounds_number": self.rounds_number,
-            "players": self.players.convert_to_dict(),
+            "players": {str(player.identifier): player.convert_to_dict() for player in self.players},
             "rounds": {rnd.round_name: rnd.convert_to_dict() for rnd in self.rounds}
         }
-
-
-class Tournaments(UserList):
-    def __init__(self, tournaments=None):
-        super().__init__(tournaments or [])
-
-    def __rich_console__(self, console, *args, **kwargs):
-        title = Panel("[bold turquoise2]ALL TOURNAMENTS[/bold turquoise2]", border_style="bold turquoise2",
-                      expand=True)
-        yield title
-        table = Table(show_header=False, border_style="bold turquoise2")
-        table.add_column("Tournament")
-        for tournament in self:
-            table.add_row(tournament)
-        yield table
-
-    def __str__(self):
-        tournaments_str = ""
-        for tournament in self:
-            prefix = Fore.MAGENTA + Style.NORMAL + "├─├─ "
-            t = Fore.MAGENTA + Style.NORMAL + f"{tournament}"
-            tournaments_str += prefix + t
-        title = Fore.MAGENTA + Style.NORMAL + "┌ ALL TOURNAMENTS :\n"
-        suffix = Fore.MAGENTA + Style.NORMAL + "└──────────────────"
-        return title + f"{tournaments_str}" + suffix
-
-    def __repr__(self):
-        return str(self)
-
-    def add_tournament(self, tournament) -> None:
-        """
-        Method that adds a tournament to the list of tournaments.
-        Args:
-            tournament (Tournament): Player to be added.
-        """
-        self.data.append(tournament)
-
-    def tournament_exists(self, tournament) -> bool:
-        """
-        Method that checks if a tournament name is already in the list of tournaments.
-        Args:
-            tournament (Tournament): Tournament to be checked.
-
-        Returns:
-            bool: True if the tournament name exists in the list of tournaments.
-        """
-        return any(tournament_obj.name == tournament.name for tournament_obj in self.data)
-
-    def convert_dict_to_tournaments(self, dictionary) -> None:
-        """
-        Method that converts tournaments' datas in a dictionary to the Tournaments object.
-        Args:
-            dictionary (dict): Dictionary to be converted.
-        """
-        for name, attrs in dictionary.items():
-            players = Players()
-            players_dict = attrs.get("players", {})
-
-            for identifier, player_attrs in players_dict.items():
-                player = Player(
-                    player_attrs["name"],
-                    player_attrs["first_name"],
-                    player_attrs["birth_date"],
-                    identifier
-                )
-                players.add_player(player)
-
-            tournament = Tournament(
-                name,
-                attrs["place"],
-                attrs["start_date"],
-                attrs["end_date"],
-                players,
-                attrs.get("description", ""),
-                attrs.get("current_round", 1),
-                attrs.get("rounds_number", NUMBER_OF_ROUNDS)
-            )
-
-            # Rounds
-            rounds_dict = attrs.get("rounds", {})
-            for rnd_name, rnd_attrs in rounds_dict.items():
-                rnd = Round(rnd_name)
-                rnd.start_date = rnd_attrs.get("start_date")
-                rnd.start_time = rnd_attrs.get("start_time")
-                rnd.end_date = rnd_attrs.get("end_date")
-                rnd.end_time = rnd_attrs.get("end_time")
-                rnd.matches = []
-
-                # rebuild the matches
-                matches_dict = rnd_attrs.get("matches", {})
-                for _, match_attrs in matches_dict.items():
-                    player_1 = players.get_player_by_identifier(match_attrs["player1"]["identifier"])
-                    player_2 = players.get_player_by_identifier(match_attrs["player2"]["identifier"])
-                    score_1 = match_attrs["player1"]["score"]
-                    score_2 = match_attrs["player2"]["score"]
-                    color_1 = match_attrs["player1"]["color"]
-                    color_2 = match_attrs["player2"]["color"]
-
-                    match = None
-                    if player_1 is not None and player_2 is not None:
-                        match = Match(player_1, player_2)
-                        match.set_scores(player_1, score_1, player_2, score_2)
-                        match.set_colors(color_1, color_2)
-                    else:
-                        print("Un joueur est manquant !")
-                    rnd.matches.append(match)
-
-                tournament.rounds.append(rnd)
-
-            self.add_tournament(tournament)
-
-    def load_tournaments_from_json(self, file_path) -> bool:
-        """
-        Method that loads tournaments from a json file
-        Args:
-            file_path (Path): Path to the json file to be loaded.
-
-        Returns:
-            Returns a boolean indicating if the tournaments were loaded successfully or not.
-        """
-        try:
-            with open(file_path, encoding="utf-8") as json_file:
-                data = json.load(json_file)
-                # convert dictionary datas in Tournaments object
-                self.convert_dict_to_tournaments(data)
-                return True
-
-        except FileNotFoundError:
-            print(f"{file_path} : ❌ file not found !\n")
-            self.save_tournament_to_json(TOURNAMENTS_DATA_JSON)
-            print(Fore.GREEN + "File Created !\n")
-            return False
-
-    def save_tournament_to_json(self, file_path) -> bool:
-        """
-        Method that saves tournaments to a json file.
-        Args:
-            file_path (Path): Path to the json file to be saved.
-
-        Returns:
-            Returns a boolean indicating if the tournaments were saved successfully or not.
-        """
-        try:
-            file_path.parent.mkdir(exist_ok=True)
-            with open(file_path, "w", encoding="utf-8") as json_file:
-                tournaments_dict = self.convert_to_dict()
-                json.dump(tournaments_dict, json_file, ensure_ascii=False, indent=4)
-                return True
-
-        except FileNotFoundError:
-            print(f"{file_path} : ❌ file not found !")
-            return False
-
-    def convert_to_dict(self) -> dict[str, dict]:
-        """
-        Method that converts the tournaments' data to a dictionary.
-        Returns:
-            The dictionary of the tournaments' data.
-        """
-        return {tournament.name: tournament.convert_to_dict() for tournament in self}

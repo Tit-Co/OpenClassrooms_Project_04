@@ -1,15 +1,19 @@
 import sys
 from datetime import datetime
+from typing import Iterable
 
-from rich.console import Console
+from rich import box
+from rich.console import Console, Group
+from rich.panel import Panel
 from rich.prompt import Prompt
+from rich.table import Table
 
-from src.chesstools.models import Tournaments, Player, Players, Round
+from src.chesstools.models import Match, Player, Round, Tournament
 
 console = Console(
     file=sys.stdout,
     force_terminal=True,
-    color_system="truecolor",  # active la palette complète
+    color_system="truecolor",
     width=200
 )
 
@@ -24,7 +28,6 @@ MESSAGE = {"alpha": "[bold bright_red]❌[/bold bright_red] [bright_red]Must be 
 
 
 class MainView:
-
     @staticmethod
     def display_main_menu() -> None:
         """
@@ -62,12 +65,149 @@ class MainView:
 
     @staticmethod
     def display_goodbye() -> None:
+        """
+        Method that displays a goodbye message.
+        """
         console.print("[bold bright_red]👋 Goodbye ! 👋[/bold bright_red]")
 
 
 class TournamentView:
     @staticmethod
+    def display_match_details(match: Match) -> Group:
+        """
+        Method that displays the match details.
+        Args:
+            match (Match): The match object.
+
+        Returns:
+            Group: The match details in Rich format.
+        """
+        player_1, score_1, color_1 = match.match_tuple[0]
+        player_2, score_2, color_2 = match.match_tuple[1]
+
+        score_1_display = str(score_1) if score_1 is not None else "0"
+        score_2_display = str(score_2) if score_2 is not None else "0"
+
+        prefix = "[bold bright_white]┝╍ [/bold bright_white]"
+        color_1_ = f"[bright_white]{color_1.upper()}[/bright_white]"
+        color_2_ = f"[bright_white]{color_2.upper()}[/bright_white]"
+        sep = " color : "
+        score_text = " score : "
+
+        table_1 = Table(show_header=False, border_style="black")
+        table_1.add_column("Prefix", justify="center")
+        table_1.add_column("Player", justify="center")
+        table_1.add_column("Color", justify="center")
+        table_1.add_column("Score Text", justify="center")
+        table_1.add_column("Score", justify="center")
+        table_1.add_row(prefix,
+                        PlayerView.display_player_details(player_1),
+                        sep,
+                        color_1_,
+                        score_text,
+                        score_1_display)
+
+        table_vs = Table(show_header=False, border_style="black")
+        table_vs.add_column("VS", justify="center")
+        table_vs.add_row("[bold yellow]VS[/bold yellow]")
+
+        table_2 = Table(show_header=False, border_style="black")
+        table_2.add_column("Prefix", justify="center")
+        table_2.add_column("Player", justify="center")
+        table_2.add_column("Color", justify="center")
+        table_2.add_column("Score Text", justify="center")
+        table_2.add_column("Score", justify="center")
+        table_2.add_row(prefix,
+                        PlayerView.display_player_details(player_2),
+                        sep,
+                        color_2_,
+                        score_text,
+                        score_2_display)
+
+        return Group(table_1, table_vs, table_2)
+
+    def display_round_details(self, rnd: Round) -> Panel:
+        """
+        Method that displays the round details.
+        Args:
+            rnd (Round): The round object.
+
+        Returns:
+            The round details in Rich format.
+        """
+        start = f"[dim grey58]{rnd.start_date} {rnd.start_time}[/dim grey58]" \
+            if rnd.start_date and rnd.start_time else "Not started"
+        end = f"[dim grey58]{rnd.end_date} {rnd.end_time}[/dim grey58]" \
+            if rnd.end_date and rnd.end_time else "Not finished"
+
+        prefix_dates = "[dim grey58] (from [/dim grey58]"
+        sep = "[dim grey58] → [/dim grey58]"
+        suffix_dates = "[dim grey58])[/dim grey58]"
+        round_name = f"[bold bright_white]{rnd.round_name}[/bold bright_white]"
+
+        round_str = f"{round_name}{prefix_dates}{start}{sep}{end}{suffix_dates}"
+
+        if not rnd.matches:
+            return Panel(
+                f"[bright_white]- The {rnd.round_name} has no matches yet.[/bright_white]",
+                border_style="black",
+                box=box.MINIMAL,
+                expand=False
+            )
+
+        table = Table(
+            show_header=False,
+            box=box.MINIMAL,
+            expand=False,
+            padding=(0, 1),
+            border_style="black",
+        )
+        table.add_column("Match info", justify="left")
+
+        header = f"[bold bright_white]- The {round_str} has {len(rnd.matches)} matches:[/bold bright_white]\n"
+        table.add_row(header)
+
+        for match in rnd.matches:
+            table.add_row(self.display_match_details(match) if match is not None else "")
+
+        return Panel(Group(table), box=box.MINIMAL, expand=False)
+
+    def display_tournament_details(self, tournament: Tournament) -> Group:
+        """
+        Method that displays the tournament details.
+        Args:
+            tournament (Tournament): The tournament object.
+
+        Returns:
+            The tournament details in Rich format.
+        """
+        name = f"[bold cyan]{tournament.name.upper()}[/bold cyan]"
+        place_dates = (
+            f"[white]({tournament.place}, {tournament.start_date} → {tournament.end_date}, "
+            f"currently in round {tournament.current_round} of {tournament.rounds_number} rounds, "
+            f"description: {tournament.description})[/white]"
+        )
+        header = Panel(
+            f"[cyan]├─   [/cyan]{name} {place_dates}",
+            expand=False,
+            border_style="cyan"
+        )
+
+        rounds_panels = []
+        if tournament.rounds:
+            rounds_title = Panel("[bright_white]ALL ROUNDS[/bright_white]", expand=False)
+            rounds_panels.append(rounds_title)
+
+            for rnd in tournament.rounds:
+                rounds_panels.append(Panel(self.display_round_details(rnd), border_style="white", expand=False))
+
+        return Group(header, *rounds_panels)
+
+    @staticmethod
     def display_tournaments_submenu() -> None:
+        """
+        Method that displays the tournaments submenu.
+        """
         console.print("[bold bright_blue]\n▶ TOURNAMENTS ◀\n[/bold bright_blue]")
         console.print("[bright_blue]▷▷ 1. Create a tournament[/bright_blue]")
         console.print("[bright_blue]▷▷ 2. Update a tournament[/bright_blue]")
@@ -281,7 +421,7 @@ class TournamentView:
             return players_number
 
     @staticmethod
-    def tournament_exists(name: str, tournaments: Tournaments) -> bool:
+    def tournament_exists(name: str, tournaments: Iterable[Tournament]) -> bool:
         """
         Method that checks if a tournament, identified by his name, exists in a tournaments object.
         Args:
@@ -296,7 +436,7 @@ class TournamentView:
                 return True
         return False
 
-    def prompt_for_selecting_tournament(self, tournaments: Tournaments) -> str | None:
+    def prompt_for_selecting_tournament(self, tournaments: Iterable[Tournament]) -> str | None:
         """
         Method that prompts the user to choose the tournament.
         Args:
@@ -324,26 +464,46 @@ class TournamentView:
             return name
 
     @staticmethod
-    def display_tournament_name(tournament_name) -> None:
+    def display_tournament_name(tournament_name: str) -> None:
+        """
+        Method that displays the tournament name.
+        Args:
+            tournament_name (str): The tournament name.
+        """
         console.print(tournament_name)
 
-    @staticmethod
-    def display_tournament(tournament) -> None:
+    def display_tournament(self, tournament: Tournament) -> None:
         """
-        Method that displays tournament object.
+        Method that displays a tournament object.
         """
-        console.print(tournament)
+        console.print(self.display_tournament_details(tournament))
 
     @staticmethod
-    def display_round(rnd) -> None:
+    def display_round(rnd: Round) -> None:
+        """
+        Method that displays a round object.
+        Args:
+            rnd (Round): The round object.
+        """
         console.print(rnd)
 
-    @staticmethod
-    def display_tournaments(tournaments) -> None:
+    def display_tournaments(self, tournaments: Iterable[Tournament]) -> None:
         """
-        Method that displays tournaments object.
+        Method that displays all the tournaments objects.
+        Args:
+            tournaments (Iterable[Tournament]): The tournaments object.
         """
-        console.print(tournaments)
+        title = Panel(
+            "[bold turquoise2]ALL TOURNAMENTS[/bold turquoise2]",
+            border_style="bold turquoise2",
+            expand=True
+        )
+        console.print(title)
+
+        for tournament in tournaments:
+            tournament_view = self.display_tournament_details(tournament)
+
+            console.print(Panel(tournament_view, border_style="cyan", expand=True))
 
     @staticmethod
     def display_tournament_name_exists() -> None:
@@ -356,12 +516,12 @@ class TournamentView:
                       "[/bright_red]")
 
     @staticmethod
-    def display_tournament_added(current_tournament: str) -> None:
+    def display_tournament_added(current_tournament: Tournament) -> None:
         console.print("[bright_yellow]✅ New tournament added to database ![/bright_yellow]")
         console.print(current_tournament)
 
     @staticmethod
-    def display_tournament_updated(current_tournament: str) -> None:
+    def display_tournament_updated(current_tournament: Tournament) -> None:
         console.print("[bright_yellow]✅ Tournament updated in database ![/bright_yellow]")
         console.print(current_tournament)
 
@@ -401,6 +561,13 @@ class TournamentView:
 
     @staticmethod
     def display_winners(winners: list[Player], max_score: float, tournament_name: str) -> None:
+        """
+        Method that displays the tournament's winner(s).
+        Args:
+            winners (list[Player]): The winners of the tournament.
+            max_score (float): The maximum score.
+            tournament_name (str): The name of the tournament.
+        """
         points = "point" if max_score <= 1 else "points"
         # Display the winner(s)
         if len(winners) == 1:
@@ -423,9 +590,27 @@ class TournamentView:
 
 
 class PlayerView:
+    @staticmethod
+    def display_player_details(player) -> str:
+        """
+        Method that displays the player's details.
+        Args:
+            player (Player): The player object.
+
+        Returns:
+            The details of the player.
+        """
+        str_id = f"[bold red]{player.identifier}[/bold red]"
+        sep = "[grey53] - [/grey53]"
+        str_name = f"[bold blue]{player.first_name} {player.name.upper()} [/bold blue]"
+        str_date = f"[grey53]born on {player.birth_date}[/grey53]"
+        return str_id + sep + str_name + str_date
 
     @staticmethod
     def display_players_submenu() -> None:
+        """
+        Method that displays the players submenu.
+        """
         console.print("[bold bright_blue]\n▶ PLAYERS ◀\n[/bold bright_blue]")
         console.print("[bright_blue]▷▷ 1. Add a player into database[/bright_blue]")
         console.print("[bright_blue]▷▷ 2. Display the club players[/bright_blue]")
@@ -547,11 +732,39 @@ class PlayerView:
                               "Must be like: AB12345 [/bright_red]")
 
     @staticmethod
-    def display_players(players: Players) -> None:
-        console.print(players)
+    def display_players(players: Iterable[Player]) -> None:
+        """
+        Method that displays the players list.
+        Args:
+            players (Iterable[Player]): The players list.
+        """
+        header = Panel(
+            "ALL PLAYERS",
+            border_style="bright_red",
+            style="bright_red",
+            expand=False
+        )
+
+        table = Table(
+            show_header=False,
+            header_style="bright_red",
+            border_style="bright_red",
+            expand=False
+        )
+        table.add_column("Identifier", justify="left", style="bold red")
+
+        for player in players:
+            str_id = f"[bold red]{player.identifier}[/bold red]"
+            sep = "[grey53] - [/grey53]"
+            str_name = f"[bold blue]{player.first_name} {player.name.upper()}[/bold blue]"
+            str_date = f"[grey53]born on {player.birth_date}[/grey53]"
+            table.add_row(f"{str_id}{sep}{str_name} {str_date}")
+
+        group = Group(header, table)
+        console.print(group)
 
     @staticmethod
-    def player_exists(identifier: str, players: Players) -> bool:
+    def player_exists(identifier: str, players: Iterable[Player]) -> bool:
         """
         Method that checks if a player, identified by his identifier, exists in a players object.
         Args:
@@ -566,7 +779,8 @@ class PlayerView:
                 return True
         return False
 
-    def prompt_for_selecting_players(self, all_players: Players, numbers_left: int, selected_players: Players) -> None:
+    def prompt_for_selecting_players(self, all_players: Iterable[Player], numbers_left: int,
+                                     selected_players: Iterable[Player]) -> None:
         """
         Method that prompts the user to choose the players.
         Args:
@@ -578,7 +792,8 @@ class PlayerView:
             The player identifier in string format.
         """
         console.print("[bright_white]▶ Select a player by typing the identifier (ex: AB12345) [/bright_white]")
-        console.print(all_players)
+
+        self.display_players(all_players)
 
         all_id_str = ""
         for idx, player in enumerate(selected_players, start=1):
@@ -646,7 +861,7 @@ class PlayerView:
                       "[/bright_red]\n")
 
     @staticmethod
-    def display_player_added(player: Players) -> None:
+    def display_player_added(player: Player) -> None:
         console.print(f"[bright_green]✅ New player added to database ![/bright_green]\n"
                       f"{player.__rich_console__(console)}")
 
@@ -716,24 +931,43 @@ class ReportView:
                       "[/bright_red]")
 
     @staticmethod
-    def display_sorted_players(number: int, players: Players) -> None:
-        console.print(f"{number} [bright_white]players alphabetically sorted.[/bright_white]\n")
-        console.print(players)
+    def display_sorted_players(number: int, players: Iterable[Player]) -> None:
+        """
+        Method that displays the players sorted.
+        Args:
+            number (int): The number of players sorted.
+            players (Iterable[Player]): The sorted players list.
+        """
+        console.print(f"\n{number} [bright_white]players alphabetically sorted.[/bright_white]\n")
+        PlayerView.display_players(players)
         console.print("\n")
 
     @staticmethod
-    def display_sorted_tournaments(tournaments: Tournaments) -> None:
+    def display_sorted_tournaments(tournaments: Iterable[Tournament], tournament_view: TournamentView) -> None:
+        """
+        Method that displays the tournaments sorted.
+        Args:
+            tournaments (Iterable[Tournament]): The tournaments list.
+            tournament_view (TournamentView): The tournament view.
+        """
         console.print("\n[bright_white]The sorted tournaments.[/bright_white]\n")
-        console.print(tournaments)
+        tournament_view.display_tournaments(tournaments)
         console.print("\n")
 
     @staticmethod
     def display_selected_tournament_title(tournament_name: str) -> None:
-        console.print("\n[bright_white]The players of selected tournament[/bright_white] \"{tournament_name}\":\n")
+        console.print(f"\n[bright_white]The selected tournament[/bright_white] \"{tournament_name}\":\n")
 
     @staticmethod
-    def display_rnd(rnd: Round) -> None:
-        console.print(rnd)
+    def display_rnd(rnd: Round, tournament_view: TournamentView) -> None:
+        """
+        Method that displays the round.
+        Args:
+            rnd (Round): The round object.
+            tournament_view (TournamentView): The tournament view.
+        """
+        details = tournament_view.display_round_details(rnd)
+        console.print(details)
 
     @staticmethod
     def display_all_rounds_and_matches_title(tournament_name: str) -> None:
