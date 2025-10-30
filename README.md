@@ -1,7 +1,7 @@
-# Chess Tournament Manager (OpenClassrooms Project 04)
-**Project 04 : develop a Python application**
+## CHESS CLUB MANAGER - OpenClassrooms Project 04
+**Develop a Python application**
 
-# DESCRIPTION
+## DESCRIPTION
 
 This project was completed as part of the "Python Developer" path at OpenClassrooms.
 
@@ -10,53 +10,53 @@ The goal was to develop a Python offline application capable of:
 - Saving datas in json files
 - Displaying / exporting several reports based on tournaments and players
 
-# PROJECT STRUCTURE
+## PROJECT STRUCTURE
 
 ![Folders and files structure](./structure.png)
 
-# INSTALLATION
+## INSTALLATION
 
-## - Clone the repository :
+### - Clone the repository :
 `git clone https://github.com/Tit-Co/OpenClassrooms_Project_04.git`
 
-## - Navigate into the project directory :
+### - Navigate into the project directory :
 `cd OpenClassrooms_Project_04`
 
-## - Create a virtual environment and dependencies :
-### Option 1 - with [uv](https://docs.astral.sh/uv/)
+### - Create a virtual environment and dependencies :
+#### Option 1 - with [uv](https://docs.astral.sh/uv/)
 
 `uv` is an environment and dependencies manager.
 
-## - Install environment and dependencies
+### - Install environment and dependencies
 
 `uv sync`
 
-### Option 2 - with pip
+#### Option 2 - with pip
 
-## - Install the virtual env :
+### - Install the virtual env :
 
 `python -m venv env`
 
-## - Activate the virtual env :
+### - Activate the virtual env :
 `source env/bin/activate`  
 Or  
 `env\Scripts\activate` on Windows  
 
-## - Install dependencies 
-### Option 1 - with [uv](https://docs.astral.sh/uv/)
+### - Install dependencies 
+#### Option 1 - with [uv](https://docs.astral.sh/uv/)
 
 `uv pip install -U -r requirements.txt`
 
-### Option 2 - with pip
+#### Option 2 - with pip
 
 `pip install -r requirements.txt` 
 
-## USAGE
+### USAGE
 
-## Run the main script
+### Run the main script
 `python main.py`
 
-## EXAMPLES
+### EXAMPLES
 
 ![Example 1](./example_1.png) 
 ![Example 2](./example_2.png) 
@@ -65,18 +65,18 @@ Or
 ![Example 5](./example_5.png) 
 ![Flake8 report](./flake8-report.png) 
 
-### You will be prompted with this menu :
+#### You will be prompted with this menu :
 - ▷▷ 1. Tournament
 - ▷▷ 2. Players
 - ▷▷ 3. Reports
 - ▷▷ 4. Quit the app
 
-#### You will be prompted with a submenu, accordingly to your choice, to:
+##### You will be prompted with a submenu, accordingly to your choice, to:
 - Add and display players
 - Create, update and display tournaments
 - Generate reports
 
-# DEPENDENCIES
+## DEPENDENCIES
 
 - colorama
 - flake8
@@ -86,7 +86,7 @@ Or
 - mypy
 - rich
 
-# FLAKE8 Reports
+## FLAKE8 Reports
 **Type the line below to generate reports with [flake8-html](https://pypi.org/project/flake8-html/) tool :**
 
 `flake8 --format=html --htmldir=flake8-report --max-line-length=119 --extend-exclude=env/`
@@ -94,7 +94,7 @@ Or
 ![Python](https://img.shields.io/badge/python-3.13-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-# AUTHOR
+## AUTHOR
 **Name**: Nicolas MARIE  
 **Track**: Python Developer – OpenClassrooms  
 **Project – Develop a Python app : Chess Tournament Manager – October 2025**

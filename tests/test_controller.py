@@ -30,7 +30,6 @@ class TestController(unittest.TestCase):
 
         self.controller.tournament_controller.current_tournament = self.tournament
 
-
     def test_create_first_round(self):
         self.controller.tournament_controller.current_tournament.create_round(1, self.players.data)
 

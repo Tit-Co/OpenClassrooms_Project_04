@@ -479,14 +479,13 @@ class TournamentView:
         """
         console.print(self.display_tournament_details(tournament))
 
-    @staticmethod
-    def display_round(rnd: Round) -> None:
+    def display_round(self, rnd: Round) -> None:
         """
         Method that displays a round object.
         Args:
             rnd (Round): The round object.
         """
-        console.print(rnd)
+        console.print(self.display_round_details(rnd))
 
     def display_tournaments(self, tournaments: Iterable[Tournament]) -> None:
         """
@@ -521,10 +520,9 @@ class TournamentView:
         console.print("[bright_yellow]✅ New tournament added to database ![/bright_yellow]")
         console.print(current_tournament)
 
-    @staticmethod
-    def display_tournament_updated(current_tournament: Tournament) -> None:
+    def display_tournament_updated(self, current_tournament: Tournament) -> None:
         console.print("[bright_yellow]✅ Tournament updated in database ![/bright_yellow]")
-        console.print(current_tournament)
+        console.print(self.display_tournament_details(current_tournament))
 
     @staticmethod
     def display_all_tournaments_completed() -> None:
