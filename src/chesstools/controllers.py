@@ -134,6 +134,7 @@ class TournamentsManager(UserList):
             tournament = Tournament(
                 name,
                 attrs["place"],
+                attrs["rounds_number"],
                 attrs["start_date"],
                 attrs["end_date"],
                 attrs.get("description", ""),
@@ -331,12 +332,13 @@ class TournamentController:
         Returns:
             The round object.
         """
+        ordered = []
         if round_number == 1:
             ordered = list(self.current_tournament.players)
             import random
             random.shuffle(ordered)
         else:
-            ordered = sorted(self.current_tournament.players, key=lambda tp: tp.score, reverse=True)
+            ordered = self.current_tournament.sort_players_by_score()
 
         round_obj = self.current_tournament.create_round(round_number, ordered)
         return round_obj
@@ -362,9 +364,11 @@ class TournamentController:
         end_date = self.view.prompt_for_tournament_end_date()
         description = self.view.prompt_for_tournament_description()
         players_number = self.view.prompt_for_tournament_players_number()
+        rounds_number = self.view.prompt_for_selecting_tournament_rounds_number()
 
         self.current_tournament = Tournament(name=name,
                                              place=place,
+                                             rounds_number=rounds_number,
                                              start_date=start_date,
                                              end_date=end_date,
                                              description=description)
@@ -427,6 +431,7 @@ class TournamentController:
                 self.tournaments.add_tournament(self.current_tournament)
 
         if self.tournaments.save_tournament_to_json(self, TOURNAMENTS_DATA_JSON):
+
             self.view.display_tournament_updated(self.current_tournament)
 
     def set_match_scores(self, match: Match,
@@ -495,26 +500,49 @@ class TournamentController:
                     self.current_tournament = tournament
             self.view.display_selected_tournament(tournament_name)
 
-            if self.current_tournament.current_round < 4:
-                self.set_tournament_scores()
+            if self.current_tournament.current_round < int(self.current_tournament.rounds_number):
+                self.setting_scores_process(tournament_name)
 
-                self.current_tournament.rounds[self.current_tournament.current_round - 1].set_end_date()
+                answer = self.view.prompt_for_asking_to_continue_tournament_filling()
+                if answer:
+                    while self.current_tournament.current_round < self.current_tournament.rounds_number:
 
-                self.current_tournament.current_round += 1
+                        self.setting_scores_process(tournament_name)
 
-                self.current_tournament.create_round(self.current_tournament.current_round,
-                                                     self.current_tournament.players)
+            if self.current_tournament.current_round == int(self.current_tournament.rounds_number):
+                self.finish_scores_process(tournament_name)
 
-                self.save_tournament(tournament_name)
+    def finish_scores_process(self, tournament_name: str) -> None:
+        """
+        Method that finishes scoring process by completes the tournament.
+        Args:
+            tournament_name (str): the tournament name.
+        """
+        self.set_tournament_scores()
 
-            else:
-                self.set_tournament_scores()
+        self.current_tournament.rounds[self.current_tournament.current_round - 1].set_end_date()
 
-                self.current_tournament.rounds[self.current_tournament.current_round - 1].set_end_date()
+        self.save_tournament(tournament_name)
 
-                self.save_tournament(tournament_name)
+        self.display_completed_tournament()
 
-                self.display_completed_tournament()
+    def setting_scores_process(self, tournament_name: str) -> None:
+        """
+        Method that sets the scores of the matches in the current round or the tournament and
+        initialize the next round.
+        Args:
+            tournament_name (str): The name of the tournament.
+        """
+        self.set_tournament_scores()
+
+        self.current_tournament.rounds[self.current_tournament.current_round - 1].set_end_date()
+
+        self.current_tournament.current_round += 1
+
+        self.current_tournament.create_round(self.current_tournament.current_round,
+                                             self.current_tournament.sort_players_by_score())
+
+        self.save_tournament(tournament_name)
 
     @staticmethod
     def increment_score(player_score: float, increment: float) -> None:
@@ -532,6 +560,8 @@ class TournamentController:
         """
         tournament = self.current_tournament
         rnd = tournament.rounds[tournament.current_round - 1]
+
+        self.view.display_setting_scores_title()
         self.view.display_round(rnd)
 
         for match in rnd.matches:
@@ -906,7 +936,7 @@ class ReportController:
             tournament_name = (self.main_controller.tournament_controller.view.
                                prompt_for_selecting_tournament(tournaments))
 
-            current_tournament = Tournament("", "")
+            current_tournament = Tournament("", "", 4)
 
             for tournament in tournaments:
                 if tournament.name == tournament_name:
@@ -929,7 +959,7 @@ class ReportController:
             tournament_name = (self.main_controller.tournament_controller.view.
                                prompt_for_selecting_tournament(tournaments))
 
-            current_tournament = Tournament("", "")
+            current_tournament = Tournament("", "", 4)
 
             for tournament in tournaments:
                 if tournament.name == tournament_name:

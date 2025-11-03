@@ -3,7 +3,6 @@ from __future__ import annotations
 # Standard library imports
 import random
 import sys
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
@@ -210,16 +209,16 @@ class Round:
 
 
 class Tournament:
-    def __init__(self, name: str, place: str, start_date=None, end_date=None, description: str = "",
-                 current_round: int = 1, rounds_number: int = NUMBER_OF_ROUNDS):
+    def __init__(self, name: str, place: str, rounds_number: int, start_date=None, end_date=None,
+                 description: str = "", current_round: int = 1):
         self.name = name
         self.place = place
+        self.rounds_number = rounds_number
         self.start_date = start_date
         self.end_date = end_date
-        self.rounds_number = rounds_number
+        self.description = description
         self.current_round = current_round
         self.rounds = []
-        self.description = description
         self.players = []
 
     def __str__(self):
@@ -299,42 +298,24 @@ class Tournament:
 
         return scores, id_to_player
 
-    def sort_players_by_score(self, verbose=False) -> None:
+    def sort_players_by_score(self) -> list:
         """
         Method that sorts the players in Players object by their scores.
-        Args:
-            verbose (bool): Boolean flag to determine if scoreboard should be printed.
+        Returns:
+            A sorted list of players.
         """
-        scores: dict[str, float] = defaultdict(float)
-
-        player_by_id = {player.identifier: player for player in self.players}
-
+        scores = {}
         for rnd in (self.rounds or []):
             for match in rnd.matches:
+                for player, raw_score, _ in match.match_tuple:
+                    pid = player.identifier
+                    scores[pid] = scores.get(pid, 0.0) + float(raw_score)
 
-                pairs = match.match_tuple
+        ordered = sorted(self.players, key=lambda p: scores.get(p.identifier, 0.0), reverse=True)
 
-                for pair in pairs:
-                    player_entry = pair[0]
-                    raw_score = pair[1]
-                    pid = player_entry.identifier
-                    score = float(raw_score)
-                    scores[pid] += score
+        self.players[:] = ordered
 
-            for player in self.players:
-                scores.setdefault(player.identifier, 0.0)
-
-            # debug : display the scoreboard if asked
-            if verbose:
-                print("⮞ Scoreboard :")
-                for pid, score in sorted(scores.items(), key=lambda kv: kv[1], reverse=True):
-                    player = player_by_id.get(pid)
-                    label = f"{player.identifier} - {player.name} {player.first_name}" if player else pid
-                    print(f"⮡ {label}: {score}")
-                print("\n")
-
-        sorted_players = sorted(self.players, key=lambda p: scores.get(p.identifier, 0.0), reverse=True)
-        self.players[:] = sorted_players
+        return ordered
 
     def create_round(self, round_number: int, players: list) -> None:
         """
@@ -361,17 +342,27 @@ class Tournament:
         players_list = players.copy()
         round_obj.matches = []
 
-        while players_list:
+        while len(players_list) >= 2:
             first = players_list.pop(0)
 
-            # seek a second player who has not played with the first one
+            # seek a second player who has not played with the first one near the first one score
             found_opponent = False
+            best_candidate_index = None
+            best_score_diff = float(1000)
+
             for i, candidate in enumerate(players_list):
                 if not self.match_already_played(first, candidate):
-                    second = players_list.pop(i)
-                    round_obj.matches.append(Match(first, second))
-                    found_opponent = True
-                    break
+                    # Seek a candidate with the nearest score
+                    diff = abs(getattr(first, "score", 0.0) - getattr(candidate, "score", 0.0))
+                    if diff < best_score_diff:
+                        best_score_diff = diff
+                        best_candidate_index = i
+
+            # found
+            if best_candidate_index is not None:
+                second = players_list.pop(best_candidate_index)
+                round_obj.matches.append(Match(first, second))
+                found_opponent = True
 
             # If no suitable candidate found, pair with the first available
             if not found_opponent and players_list:

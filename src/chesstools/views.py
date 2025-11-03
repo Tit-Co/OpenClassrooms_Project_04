@@ -23,6 +23,8 @@ MESSAGE = {"alpha": "[bold bright_red]❌[/bold bright_red] [bright_red]Must be 
            "invalid": "[bold bright_red]❌[/bold bright_red] [bright_red]You typed a special character.[/bright_red]",
            "digit": "[bold bright_red]❌[/bold bright_red] [bright_red]Must be a digit[/bright_red]",
            "digit_between": "[bold bright_red]❌[/bold bright_red] [bright_red]Must be a digit between[/bright_red]",
+           "digit_minimum": "[bold bright_red]❌[/bold bright_red] [bright_red]Must be a minimum of 4[/bright_red]",
+           "not_even": "[bold bright_red]❌[/bold bright_red] [bright_red]Must be an even number[/bright_red]",
            "string": "[bold bright_red]❌[/bold bright_red] [bright_red]You must enter a string.[/bright_red]",
            "invalid_date": "[bold bright_red]❌[/bold bright_red] [bright_red]Invalid date format. "
                            "Please use dd/mm/yyyy.[/bright_red]"}
@@ -465,6 +467,57 @@ class TournamentView:
             return name
 
     @staticmethod
+    def prompt_for_asking_to_continue_tournament_filling() -> bool:
+        """
+        Method that prompts the users if they want to continue tournament scores filling.
+        Returns:
+            A boolean. True if the users want to pursue, False otherwise.
+        """
+        while True:
+            question = Prompt.ask("[bright_white]▶ Do you want to pursue the completion of the tournament ? "
+                                  "(y/n) [/bright_white]").strip()
+
+            if not question:
+                console.print(MESSAGE["empty"])
+                continue
+
+            if question in ("y", "yes"):
+                return True
+
+            elif question in ("n", "no"):
+                return False
+
+            else:
+                console.print("[bold bright_red]❌[/bold bright_red] [bright_red]You must enter 'y' or 'n'."
+                              "[/bright_red]")
+
+    @staticmethod
+    def prompt_for_selecting_tournament_rounds_number():
+        """
+        Method that prompts the users to choose the tournament rounds number.
+        Returns:
+            The rounds number in integer format.
+        """
+        while True:
+            number = Prompt.ask("[bright_white]▶ Select the number of rounds [/bright_white]").strip()
+            if number.isalpha():
+                console.print(MESSAGE["alpha"])
+                continue
+            elif len(number) == 0:
+                console.print(MESSAGE["empty"])
+                continue
+            elif not number.isalpha() and not number.isdigit():
+                console.print(MESSAGE["invalid"])
+                continue
+            elif number.isdigit() and int(number) % 2 != 0:
+                console.print(MESSAGE["not_even"])
+                continue
+            elif int(number) < 4:
+                console.print(MESSAGE["digit_minimum"])
+                continue
+            return int(number)
+
+    @staticmethod
     def display_tournament_name(tournament_name: str) -> None:
         """
         Method that displays the tournament name.
@@ -478,6 +531,14 @@ class TournamentView:
         Method that displays a tournament object.
         """
         console.print(self.display_tournament_details(tournament))
+
+    @staticmethod
+    def display_setting_scores_title() -> None:
+        """
+        Method that displays the 'setting scores' title.
+        """
+        text = "⮞ Setting scores for current round :".upper()
+        console.print(f"\n[bold bright_yellow]{text}[/bold bright_yellow]")
 
     def display_round(self, rnd: Round) -> None:
         """
@@ -515,10 +576,9 @@ class TournamentView:
         console.print("[bold bright_red]❌[/bold bright_red] [bright_red]Tournament already in the database !\n"
                       "[/bright_red]")
 
-    @staticmethod
-    def display_tournament_added(current_tournament: Tournament) -> None:
+    def display_tournament_added(self, current_tournament: Tournament) -> None:
         console.print("[bright_yellow]✅ New tournament added to database ![/bright_yellow]")
-        console.print(current_tournament)
+        console.print(self.display_tournament_details(current_tournament))
 
     def display_tournament_updated(self, current_tournament: Tournament) -> None:
         console.print("[bright_yellow]✅ Tournament updated in database ![/bright_yellow]")
@@ -550,9 +610,24 @@ class TournamentView:
         console.print("[bright_white]⚠️ Player already selected. Please choose another one.[/bright_white]\n")
 
     @staticmethod
-    def display_player_added(player: Player, current_number: int, number: int) -> None:
-        console.print(f"{player.__rich_console__(console)}\n✅ [bright_yellow]added to tournament. "
-                      f"({current_number}/{number}).\n[/bright_yellow]")
+    def display_player(player) -> str:
+        """
+        Method that displays the player's details.
+        Args:
+            player (Player): The player object.
+
+        Returns:
+            The details of the player.
+        """
+        str_id = f"[bold red]{player.identifier}[/bold red]"
+        sep = "[grey53] - [/grey53]"
+        str_name = f"[bold blue]{player.first_name} {player.name.upper()} [/bold blue]"
+        str_date = f"[grey53]born on {player.birth_date}[/grey53]"
+        return str_id + sep + str_name + str_date
+
+    def display_player_added(self, player: Player, current_number: int, number: int) -> None:
+        console.print(self.display_player(player))
+        console.print(f"✅ [bright_yellow]added to tournament. ({current_number}/{number}).\n[/bright_yellow]")
 
     @staticmethod
     def display_no_scores_found() -> None:
@@ -867,10 +942,9 @@ class PlayerView:
         console.print("[bold bright_red]❌[/bold bright_red] [bright_red]This player already exists in database !"
                       "[/bright_red]\n")
 
-    @staticmethod
-    def display_player_added(player: Player) -> None:
-        console.print(f"[bright_green]✅ New player added to database ![/bright_green]\n"
-                      f"{player.__rich_console__(console)}")
+    def display_player_added(self, player: Player) -> None:
+        console.print("[bright_green]✅ New player added to database ![/bright_green]\n")
+        console.print(self.display_player_details(player))
 
     @staticmethod
     def display_file_not_found(file_path: Path) -> None:
